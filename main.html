@@ -92,8 +92,8 @@
     }
 
     function update() {
-        if (cursors.up.isDown) {
-            player.setVelocityY(-250);
+        if (cursors.up.isDown && player.body.onFloor()) {
+            player.setVelocityY(-500);
         } else if (cursors.left.isDown) {
             player.setVelocityX(-160);
             player.setFlipX(true);
