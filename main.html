@@ -20,7 +20,7 @@
         physics: {
             default: 'arcade',
             arcade: {
-                gravity: { y: 300 },
+                gravity: { y: 1000 },
                 debug: false
             }
         },
@@ -35,52 +35,80 @@
 
     function preload() {
         this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
-        this.load.atlas('idle', 'assets/Meow-Knight/Meow-Knight_Idle.png', 'assets/Meow-Knight/Meow-Knight_Idle.json');
-        this.load.atlas('run', 'assets/Meow-Knight/Meow-Knight_Run.png', 'assets/Meow-Knight/Meow-Knight_Run.json');
-        this.load.atlas('jump', 'assets/Meow-Knight/Meow-Knight_Jump.png', 'assets/Meow-Knight/Meow-Knight_Jump.json');
-        this.load.atlas('attack', 'assets/Meow-Knight/Meow-Knight_Attack.png', 'assets/Meow-Knight/Meow-Knight_Attack.json');
+        this.load.spritesheet('owlet-idle', 'assets/Owlet_Monster/Owlet_Monster_Idle_4.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('owlet-run', 'assets/Owlet_Monster/Owlet_Monster_Run_6.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('owlet-jump', 'assets/Owlet_Monster/Owlet_Monster_Jump_8.png', { frameWidth: 32, frameHeight: 32 });
+
+        this.load.image('background', 'assets/maps/images/background.png');
+        this.load.image('spike', 'assets/maps/images/spike.png');
+        this.load.image('tiles', 'assets/maps/tilesets/platformPack_tilesheet.png');
+        this.load.tilemapTiledJSON('map', 'assets/maps/tilemaps/level1.json');
+
+
     }
 
     var player;
+    var cursors;
 
     function create() {
+        const backgroundImage = this.add.image(0,0, 'background').setOrigin(0,0);
+        backgroundImage.setScale(2, 0.8);
 
-        player = this.physics.add.sprite(50, 50, 'idlePlayer');
-        player.setBounce(0.2);
+        const map = this.make.tilemap({ key: 'map' });
+        const tileset = map.addTilesetImage('kenney_simple_platformer', 'tiles');
+        const platforms = map.createStaticLayer('Platforms', tileset, 0, 200);
+        platforms.setCollisionByExclusion(-1, true);
+
+        player = this.physics.add.sprite(50, 50, 'owlet-idle');
+
+        player.setBounce(0.1);
         player.setCollideWorldBounds(true);
+        this.physics.add.collider(player, platforms);
         player.setScale(2);
 
         this.anims.create({
-            key: 'idle',
-            frames: this.anims.generateFrameNames('idle', {prefix: 'sprite', start: 1, end: 6}),
+            key: 'owlet-idle',
+            frames: this.anims.generateFrameNumbers('owlet-idle', {start: 0, end: 4}),
             frameRate: 10,
             repeat: -1
-        })
+        });
 
         this.anims.create({
-            key: 'run',
-            frames: this.anims.generateFrameNames('run', {prefix: 'sprite', start: 1, end: 6}),
+            key: 'owlet-run',
+            frames: this.anims.generateFrameNumbers('owlet-run', {start: 0, end: 6}),
             frameRate: 10,
             repeat: -1
-        })
+        });
 
         this.anims.create({
-            key: 'jump',
-            frames: this.anims.generateFrameNames('jump', {prefix: 'sprite', start: 1, end: 11}),
+            key: 'owlet-jump',
+            frames: this.anims.generateFrameNumbers('owlet-jump', {start: 0, end: 8}),
             frameRate: 10,
             repeat: -1
-        })
+        });
 
-        this.anims.create({
-            key: 'attack',
-            frames: this.anims.generateFrameNames('attack', {prefix: 'sprite', start: 1, end: 8}),
-            frameRate: 10,
-            repeat: -1
-        })
+        cursors = this.input.keyboard.createCursorKeys();
+
     }
 
     function update() {
-        player.anims.play('run', true);
+        if (cursors.up.isDown) {
+            player.setVelocityY(-250);
+        } else if (cursors.left.isDown) {
+            player.setVelocityX(-160);
+            player.setFlipX(true);
+            player.anims.play('owlet-run', true);
+        } else if (cursors.right.isDown) {
+            player.setVelocityX(160);
+            player.setFlipX(false);
+            player.anims.play('owlet-run', true);
+        } else {
+            player.setVelocityX(0);
+            player.anims.play('owlet-idle', true);
+        }
+
+
+
 
     }
 </script>
