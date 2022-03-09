@@ -41,8 +41,8 @@
 
         this.load.image('background', 'assets/maps/images/background.png');
         this.load.image('spike', 'assets/maps/images/spike.png');
-        this.load.image('tiles', 'assets/maps/tilesets/platformPack_tilesheet.png');
-        this.load.tilemapTiledJSON('map', 'assets/maps/tilemaps/level1.json');
+        this.load.image('tiles', 'assets/maps/tilesets/terrain_tilesheet.png');
+        this.load.tilemapTiledJSON('map', 'assets/maps/tilemaps/homestage.json');
 
 
     }
@@ -55,16 +55,16 @@
         backgroundImage.setScale(2, 0.8);
 
         const map = this.make.tilemap({ key: 'map' });
-        const tileset = map.addTilesetImage('kenney_simple_platformer', 'tiles');
-        const platforms = map.createStaticLayer('Platforms', tileset, 0, 200);
+        const tileset = map.addTilesetImage('terrain_tilesheet', 'tiles');
+        const platforms = map.createStaticLayer('Platforms', tileset, 0, 0);
         platforms.setCollisionByExclusion(-1, true);
 
-        player = this.physics.add.sprite(50, 50, 'owlet-idle');
+        player = this.physics.add.sprite(100, 300, 'owlet-idle');
 
         player.setBounce(0.1);
         player.setCollideWorldBounds(true);
         this.physics.add.collider(player, platforms);
-        player.setScale(2);
+        // player.setScale(2);
 
         this.anims.create({
             key: 'owlet-idle',
@@ -93,7 +93,7 @@
 
     function update() {
         if (cursors.up.isDown && player.body.onFloor()) {
-            player.setVelocityY(-500);
+            player.setVelocityY(-350);
         } else if (cursors.left.isDown) {
             player.setVelocityX(-160);
             player.setFlipX(true);
