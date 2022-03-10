@@ -58,7 +58,7 @@ export class HomeStage extends Phaser.Scene {
 
     update() {
         if (cursors.up.isDown && player.body.onFloor()) {
-            player.setVelocityY(-350);
+            player.setVelocityY(-400);
         } else if (cursors.left.isDown) {
             player.setVelocityX(-160);
             player.setFlipX(true);
