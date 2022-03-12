@@ -70,12 +70,12 @@ export class HomeStage extends Phaser.Scene {
         });
 
         // Create player 2
-        player2 = this.physics.add.sprite(700, 300, 'pinkie-idle');
-        player2.setSize(14, 27);
-        player2.setOffset(8, 5);
-        player2.setBounce(0.1);
-        player2.setCollideWorldBounds(true);
-        this.physics.add.collider(player2, platforms);
+        // player2 = this.physics.add.sprite(700, 300, 'pinkie-idle');
+        // player2.setSize(14, 27);
+        // player2.setOffset(8, 5);
+        // player2.setBounce(0.1);
+        // player2.setCollideWorldBounds(true);
+        // this.physics.add.collider(player2, platforms);
 
         this.anims.create({
             key: 'pinkie-idle',
@@ -143,17 +143,28 @@ export class HomeStage extends Phaser.Scene {
                 console.log(players[id]);
                 console.log(self.socket.id);
                 if(players[id].playerId == self.socket.id) {
-                    player = this.physics.add.sprite(100, 300, 'owlet-idle');
+                    player = self.physics.add.sprite(100, 300, 'owlet-idle');
                     player.setSize(14, 27);
                     player.setOffset(8, 5);
                     player.setBounce(0.1);
                     player.setCollideWorldBounds(true);
                     player.isTagged = false;
-                    this.physics.add.collider(player, platforms);
+                    self.physics.add.collider(player, platforms);
                     playerGenerated = true;
                 }
             });
         }) 
+        
+        this.socket.on('newPlayer', function (playerInfo) {
+            console.log("ASFASDF");
+            player2 = self.physics.add.sprite(100, 300, 'owlet-idle');    
+            player2.setSize(14, 27);
+            player2.setOffset(8, 5);
+            player2.setBounce(0.1);
+            player2.setCollideWorldBounds(true);
+            player2.isTagged = false;
+            self.physics.add.collider(player2, platforms);
+        });
         
 
 

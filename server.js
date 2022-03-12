@@ -20,7 +20,12 @@ io.on('connection', function (socket) {
     char: 'owlet',
     playerId: socket.id
   }
+  
+  // Give current player list of active players
   socket.emit('currentPlayers', players);
+
+  // Let everyone know new player has arrived
+  socket.broadcast.emit('newPlayer', players[socket.id]);
 
 });
 
