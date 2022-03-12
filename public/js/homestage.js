@@ -135,44 +135,19 @@ export class HomeStage extends Phaser.Scene {
             // console.log(taggers.contains(player1));
             console.log(player1.playerId);
             this.handleTag(runners.contains(player1) ? player1 : player2);
+            playerGenerated = true;
         });
 
         this.socket.on('currentPlayers', (players) => {    
-            console.log("I am " + self.socket.id);
             Object.keys(players).forEach((id) => {
                 if(players[id].playerId == self.socket.id) {
-                    player = self.physics.add.sprite(players[id].x, players[id].y, players[id].char + '-idle');
-                    player.playerId = id;
-                    player.char = players[id].char;
-                    player.setSize(14, 27);
-                    player.setOffset(8, 5);
-                    player.setBounce(0.1);
-                    player.setCollideWorldBounds(true);
-                    player.isTagged = false;
+                    player = self.createPlayer(self, players[id]);
                     self.physics.add.collider(player, platforms);
                     playerGenerated = true;
-                    if(players[id].char === "pinkie") {
-                        taggers.add(player);
-                    } else {
-                        runners.add(player);
-                    }
                 } else {
-                    var otherPlayer = self.physics.add.sprite(players[id].x, players[id].y, players[id].char + '-idle');  
-                    otherPlayer.playerId = players[id].playerId;
-                    otherPlayer.char = players[id].char;
-                    otherPlayer.setSize(14, 27);
-                    otherPlayer.setOffset(8, 5);
-                    otherPlayer.setBounce(0.1);
-                    otherPlayer.setCollideWorldBounds(true);
-                    otherPlayer.isTagged = false;
-                    self.physics.add.collider(otherPlayer, platforms);   
-                    otherPlayer.anims.play(players[id].char + '-idle', true);
+                    var otherPlayer = self.createPlayer(self, players[id]);
+                    self.physics.add.collider(otherPlayer, platforms);
                     otherPlayers.add(otherPlayer);
-                    if(players[id].char === "pinkie") {
-                        taggers.add(otherPlayer);
-                    } else {
-                        runners.add(otherPlayer);
-                    }
                 }
             });
         })
@@ -213,25 +188,28 @@ export class HomeStage extends Phaser.Scene {
           });
 
         this.socket.on('newPlayer', function (playerInfo) {
-            var otherPlayer = self.physics.add.sprite(playerInfo.x, playerInfo.y, playerInfo.char + '-idle');    
-            otherPlayer.playerId = playerInfo.playerId;
-            otherPlayer.char = playerInfo.char;
-            otherPlayer.setSize(14, 27);
-            otherPlayer.setOffset(8, 5);
-            otherPlayer.setBounce(0.1);
-            otherPlayer.setCollideWorldBounds(true);
-            otherPlayer.isTagged = false;
+            var otherPlayer = self.createPlayer(self, playerInfo);
             self.physics.add.collider(otherPlayer, platforms);
-            if(playerInfo.char === "pinkie") {
-                taggers.add(otherPlayer);
-            } else {
-                runners.add(otherPlayer);
-            }
             otherPlayers.add(otherPlayer);
         });
-        
+    }
 
-
+    createPlayer(self, playerInfo) {
+        var temp = self.physics.add.sprite(playerInfo.x, playerInfo.y, playerInfo.char + '-idle');
+        temp.anims.play(playerInfo.char + '-idle', true);
+        temp.playerId = playerInfo.playerId;
+        temp.char = playerInfo.char;
+        temp.setSize(14, 27);
+        temp.setOffset(8, 5);
+        temp.setBounce(0.1);
+        temp.setCollideWorldBounds(true);
+        temp.isTagged = false;
+        if(playerInfo.char === "pinkie") {
+            taggers.add(temp);
+        } else {
+            runners.add(temp);
+        }
+        return temp;
     }
 
     update() {
