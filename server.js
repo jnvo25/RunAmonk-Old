@@ -10,15 +10,28 @@ app.get('/', function (req, res) {
 });
 
 var players = {};
+var owlets = 0;
+var pinkies = 0;
 io.on('connection', function (socket) {
   console.log('a user connected: ', socket.id);
 
   // Generate owl data and send to client
-  players[socket.id] = {
-    x: 100,
-    y: 300,
-    char: 'owlet',
-    playerId: socket.id
+  if (owlets > pinkies) {
+    players[socket.id] = {
+      x: 100,
+      y: 300,
+      char: 'pinkie',
+      playerId: socket.id
+    }
+    pinkies++;
+  } else {
+    players[socket.id] = {
+      x: 100,
+      y: 300,
+      char: 'owlet',
+      playerId: socket.id
+    }
+    owlets++;
   }
 
   // Give current player list of active players

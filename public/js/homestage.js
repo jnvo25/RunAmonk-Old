@@ -143,22 +143,47 @@ export class HomeStage extends Phaser.Scene {
                 console.log(players[id]);
                 console.log(self.socket.id);
                 if(players[id].playerId == self.socket.id) {
-                    player = self.physics.add.sprite(100, 300, 'owlet-idle');
-                    player.setSize(14, 27);
-                    player.setOffset(8, 5);
-                    player.setBounce(0.1);
-                    player.setCollideWorldBounds(true);
-                    player.isTagged = false;
-                    self.physics.add.collider(player, platforms);
-                    playerGenerated = true;
+                    if(players[id].char === "owlet") {
+                        player = self.physics.add.sprite(100, 300, 'owlet-idle');
+                        player.char = "owlet";
+                        player.setSize(14, 27);
+                        player.setOffset(8, 5);
+                        player.setBounce(0.1);
+                        player.setCollideWorldBounds(true);
+                        player.isTagged = false;
+                        self.physics.add.collider(player, platforms);
+                        playerGenerated = true;
+                    } else {
+                        player = self.physics.add.sprite(700, 300, 'pinkie-idle');
+                        player.char = "pinkie";
+                        player.setSize(14, 27);
+                        player.setOffset(8, 5);
+                        player.setBounce(0.1);
+                        player.setCollideWorldBounds(true);
+                        player.isTagged = false;
+                        self.physics.add.collider(player, platforms);
+                        playerGenerated = true;
+                    }
+                    
                 } else {
-                    player2 = self.physics.add.sprite(100, 300, 'owlet-idle');    
-                    player2.setSize(14, 27);
-                    player2.setOffset(8, 5);
-                    player2.setBounce(0.1);
-                    player2.setCollideWorldBounds(true);
-                    player2.isTagged = false;
-                    self.physics.add.collider(player2, platforms);
+                    var otherPlayer = players[id];
+                    if(otherPlayer.char === "owlet") {
+                        player2 = self.physics.add.sprite(100, 300, 'owlet-idle');    
+                        player2.setSize(14, 27);
+                        player2.setOffset(8, 5);
+                        player2.setBounce(0.1);
+                        player2.setCollideWorldBounds(true);
+                        player2.isTagged = false;
+                        self.physics.add.collider(player2, platforms);   
+                    } else {
+                        player2 = self.physics.add.sprite(100, 700, 'pinkie-idle');    
+                        player2.setSize(14, 27);
+                        player2.setOffset(8, 5);
+                        player2.setBounce(0.1);
+                        player2.setCollideWorldBounds(true);
+                        player2.isTagged = false;
+                        self.physics.add.collider(player2, platforms); 
+                    }
                 }
             });
         })
@@ -177,7 +202,11 @@ export class HomeStage extends Phaser.Scene {
 
         this.socket.on('newPlayer', function (playerInfo) {
             console.log("ASFASDF");
-            player2 = self.physics.add.sprite(100, 300, 'owlet-idle');    
+            if(playerInfo.char === "owlet") {
+                player2 = self.physics.add.sprite(100, 300, 'owlet-idle');    
+            } else {
+                player2 = self.physics.add.sprite(100, 300, 'pinkie-idle');    
+            }
             player2.setSize(14, 27);
             player2.setOffset(8, 5);
             player2.setBounce(0.1);
@@ -213,14 +242,23 @@ export class HomeStage extends Phaser.Scene {
             } else if (cursors.left.isDown) {
                 player.setVelocityX(-160);
                 player.setFlipX(true);
-                player.anims.play('owlet-run', true);
+                if(player.char === "owlet")
+                    player.anims.play('owlet-run', true);
+                else
+                    player.anims.play('pinkie-run', true);
             } else if (cursors.right.isDown) {
                 player.setVelocityX(160);
                 player.setFlipX(false);
-                player.anims.play('owlet-run', true);
+                if(player.char === "owlet")
+                    player.anims.play('owlet-run', true);
+                else
+                    player.anims.play('pinkie-run', true);
             } else {
                 player.setVelocityX(0);
-                player.anims.play('owlet-idle', true);
+                if(player.char === "owlet")
+                    player.anims.play('owlet-idle', true);
+                else
+                    player.anims.play('pinkie-idle', true);
             }
 
             // emit position change if changed
