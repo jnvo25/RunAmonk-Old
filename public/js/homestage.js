@@ -7,6 +7,7 @@ var p2text;
 var cursors;
 var gameStarted;
 var playerGenerated;
+var otherPlayers;
 
 export class HomeStage extends Phaser.Scene {
     constructor() {
@@ -69,14 +70,6 @@ export class HomeStage extends Phaser.Scene {
             frameRate: 10
         });
 
-        // Create player 2
-        // player2 = this.physics.add.sprite(700, 300, 'pinkie-idle');
-        // player2.setSize(14, 27);
-        // player2.setOffset(8, 5);
-        // player2.setBounce(0.1);
-        // player2.setCollideWorldBounds(true);
-        // this.physics.add.collider(player2, platforms);
-
         this.anims.create({
             key: 'pinkie-idle',
             frames: this.anims.generateFrameNumbers('pinkie-idle', {start: 0, end: 4}),
@@ -99,7 +92,6 @@ export class HomeStage extends Phaser.Scene {
         })
 
         cursors = this.input.keyboard.createCursorKeys();
-
 
 
         // Print instructions onto screen
@@ -135,94 +127,67 @@ export class HomeStage extends Phaser.Scene {
 
         var self = this;
         this.socket = io();
+        otherPlayers = new Set();
 
         // Create player 1
         playerGenerated = false;
         this.socket.on('currentPlayers', (players) => {
             Object.keys(players).forEach((id) => {
-                console.log(players[id]);
-                console.log(self.socket.id);
                 if(players[id].playerId == self.socket.id) {
-                    if(players[id].char === "owlet") {
-                        player = self.physics.add.sprite(players[id].x, players[id].y, 'owlet-idle');
-                        player.char = "owlet";
-                        player.setSize(14, 27);
-                        player.setOffset(8, 5);
-                        player.setBounce(0.1);
-                        player.setCollideWorldBounds(true);
-                        player.isTagged = false;
-                        self.physics.add.collider(player, platforms);
-                        playerGenerated = true;
-                    } else {
-                        player = self.physics.add.sprite(players[id].x, players[id].y, 'pinkie-idle');
-                        player.char = "pinkie";
-                        player.setSize(14, 27);
-                        player.setOffset(8, 5);
-                        player.setBounce(0.1);
-                        player.setCollideWorldBounds(true);
-                        player.isTagged = false;
-                        self.physics.add.collider(player, platforms);
-                        playerGenerated = true;
-                    }
-                    
+                    player = self.physics.add.sprite(players[id].x, players[id].y, players[id].char + '-idle');
+                    player.char = players[id].char;
+                    player.setSize(14, 27);
+                    player.setOffset(8, 5);
+                    player.setBounce(0.1);
+                    player.setCollideWorldBounds(true);
+                    player.isTagged = false;
+                    self.physics.add.collider(player, platforms);
+                    playerGenerated = true;
                 } else {
-                    var otherPlayer = players[id];
-                    if(otherPlayer.char === "owlet") {
-                        player2 = self.physics.add.sprite(players[id].x, players[id].y, 'owlet-idle');    
-                        player2.setSize(14, 27);
-                        player2.setOffset(8, 5);
-                        player2.setBounce(0.1);
-                        player2.setCollideWorldBounds(true);
-                        player2.isTagged = false;
-                        self.physics.add.collider(player2, platforms);   
-                        player2.anims.play('owlet-idle', true);
-                    } else {
-                        player2 = self.physics.add.sprite(players[id].x, players[id].y, 'pinkie-idle');    
-                        player2.setSize(14, 27);
-                        player2.setOffset(8, 5);
-                        player2.setBounce(0.1);
-                        player2.setCollideWorldBounds(true);
-                        player2.isTagged = false;
-                        self.physics.add.collider(player2, platforms); 
-                        player2.anims.play('pinkie-idle', true);
-                    }
+                    var otherPlayer = self.physics.add.sprite(players[id].x, players[id].y, players[id].char + '-idle');    
+                    otherPlayer.playerId = players[id].playerId;
+                    otherPlayer.setSize(14, 27);
+                    otherPlayer.setOffset(8, 5);
+                    otherPlayer.setBounce(0.1);
+                    otherPlayer.setCollideWorldBounds(true);
+                    otherPlayer.isTagged = false;
+                    self.physics.add.collider(otherPlayer, platforms);   
+                    otherPlayer.anims.play(players[id].char + '-idle', true);
+                    otherPlayers.add(otherPlayer);
                 }
             });
         })
 
-        this.socket.on('disconnectedPlayer', () => {
-            player2.destroy();
+        this.socket.on('disconnectedPlayer', (playerId) => {
+            
+            otherPlayers.forEach(function (otherPlayer) {
+                console.log(otherPlayer.playerId, playerId);
+                if(otherPlayer.playerId === playerId) {
+                    otherPlayer.destroy();
+                }
+            });
         })
 
         this.socket.on('playerMoved', function (playerInfo) {
-            console.log("player has moved!");
-            console.log(playerInfo);
-            // player2.setPosition(playerInfo.x, playerInfo.y);
-            player2.setPosition(playerInfo.x, playerInfo.y);
-            player2.setFlipX(playerInfo.flip);
-            player2.anims.play(playerInfo.anim, true);
-            // self.otherPlayers.getChildren().forEach(function (otherPlayer) {
-            //   if (playerInfo.playerId === otherPlayer.playerId) {
-            //     otherPlayer.setRotation(playerInfo.rotation);
-            //     otherPlayer.setPosition(playerInfo.x, playerInfo.y);
-            //   }
-            // });
+            otherPlayers.forEach(function (otherPlayer) {
+                if(otherPlayer.playerId === playerInfo.playerId) {
+                    otherPlayer.setPosition(playerInfo.x, playerInfo.y);
+                    otherPlayer.setFlipX(playerInfo.flip);
+                    otherPlayer.anims.play(playerInfo.anim, true);
+                }
+            });
           });
 
         this.socket.on('newPlayer', function (playerInfo) {
-            console.log("ASFASDF");
-            if(playerInfo.char === "owlet") {
-                player2 = self.physics.add.sprite(100, 300, 'owlet-idle');    
-            } else {
-                player2 = self.physics.add.sprite(100, 300, 'pinkie-idle');    
-            }
-            
-            player2.setSize(14, 27);
-            player2.setOffset(8, 5);
-            player2.setBounce(0.1);
-            player2.setCollideWorldBounds(true);
-            player2.isTagged = false;
-            self.physics.add.collider(player2, platforms);
+            var otherPlayer = self.physics.add.sprite(playerInfo.x, playerInfo.y, playerInfo.char + '-idle');    
+            otherPlayer.playerId = playerInfo.playerId;
+            otherPlayer.setSize(14, 27);
+            otherPlayer.setOffset(8, 5);
+            otherPlayer.setBounce(0.1);
+            otherPlayer.setCollideWorldBounds(true);
+            otherPlayer.isTagged = false;
+            self.physics.add.collider(otherPlayer, platforms);
+            otherPlayers.add(otherPlayer);
         });
         
 
