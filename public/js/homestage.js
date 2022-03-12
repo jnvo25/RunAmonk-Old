@@ -140,6 +140,13 @@ export class HomeStage extends Phaser.Scene {
 
         p1text = this.add.text(10, 10, "Player 1: " + playerScore, {backgroundColor: "#ffo"});
         p2text = this.add.text(10, 30, "Player 2: " + player2Score, {backgroundColor: "#ffo"});
+
+        var self = this;
+        this.socket = io();
+
+
+
+
     }
 
     update() {
