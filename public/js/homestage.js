@@ -6,6 +6,7 @@ var p1text;
 var p2text;
 var cursors;
 var gameStarted;
+var playerGenerated;
 
 export class HomeStage extends Phaser.Scene {
     constructor() {
@@ -40,15 +41,6 @@ export class HomeStage extends Phaser.Scene {
         const tileset = map.addTilesetImage('terrain_tilesheet', 'tiles');
         const platforms = map.createStaticLayer('Platforms', tileset, 0, 0);
         platforms.setCollisionByExclusion(-1, true);
-
-        // Create player 1
-        player = this.physics.add.sprite(100, 300, 'owlet-idle');
-        player.setSize(14, 27);
-        player.setOffset(8, 5);
-        player.setBounce(0.1);
-        player.setCollideWorldBounds(true);
-        player.isTagged = false;
-        this.physics.add.collider(player, platforms);
 
         this.anims.create({
             key: 'owlet-idle',
@@ -128,12 +120,12 @@ export class HomeStage extends Phaser.Scene {
             })
         })
 
-        player.on('animationcomplete', () => {
-            if(player.anims.currentAnim.key === 'owlet-death') {
-                player.isTagged = true;
+        // player.on('animationcomplete', () => {
+        //     if(player.anims.currentAnim.key === 'owlet-death') {
+        //         player.isTagged = true;
 
-            }
-        })
+        //     }
+        // })
 
         playerScore = 0;
         player2Score = 0;
@@ -144,29 +136,47 @@ export class HomeStage extends Phaser.Scene {
         var self = this;
         this.socket = io();
 
-
+        // Create player 1
+        playerGenerated = false;
+        this.socket.on('currentPlayers', (players) => {
+            Object.keys(players).forEach((id) => {
+                console.log(players[id]);
+                console.log(self.socket.id);
+                if(players[id].playerId == self.socket.id) {
+                    player = this.physics.add.sprite(100, 300, 'owlet-idle');
+                    player.setSize(14, 27);
+                    player.setOffset(8, 5);
+                    player.setBounce(0.1);
+                    player.setCollideWorldBounds(true);
+                    player.isTagged = false;
+                    this.physics.add.collider(player, platforms);
+                    playerGenerated = true;
+                }
+            });
+        }) 
+        
 
 
     }
 
     update() {
 
-        if(player.isTagged) {
-            this.endRound();
-            displayText(this, "Game starting in 3...", 1000, ()=> {
-                displayText(this, "Game starting in 2...", 1000, ()=> {
-                    displayText(this, "Game starting in 1...", 1000, ()=> {
-                        gameStarted = true;
-                    })
-                })
-            })
-        }
+        // if(player.isTagged) {
+        //     this.endRound();
+        //     displayText(this, "Game starting in 3...", 1000, ()=> {
+        //         displayText(this, "Game starting in 2...", 1000, ()=> {
+        //             displayText(this, "Game starting in 1...", 1000, ()=> {
+        //                 gameStarted = true;
+        //             })
+        //         })
+        //     })
+        // }
 
 
-        // Define chaser
-        this.physics.collide(player, player2, this.tagged);
+        // // Define chaser
+        // this.physics.collide(player, player2, this.tagged);
 
-        if(gameStarted) {
+        if(gameStarted && playerGenerated) {
             if (cursors.up.isDown && player.body.onFloor()) {
                 player.setVelocityY(-400);
             } else if (cursors.left.isDown) {
