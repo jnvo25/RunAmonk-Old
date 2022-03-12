@@ -144,7 +144,7 @@ export class HomeStage extends Phaser.Scene {
                 console.log(self.socket.id);
                 if(players[id].playerId == self.socket.id) {
                     if(players[id].char === "owlet") {
-                        player = self.physics.add.sprite(100, 300, 'owlet-idle');
+                        player = self.physics.add.sprite(players[id].x, players[id].y, 'owlet-idle');
                         player.char = "owlet";
                         player.setSize(14, 27);
                         player.setOffset(8, 5);
@@ -154,7 +154,7 @@ export class HomeStage extends Phaser.Scene {
                         self.physics.add.collider(player, platforms);
                         playerGenerated = true;
                     } else {
-                        player = self.physics.add.sprite(700, 300, 'pinkie-idle');
+                        player = self.physics.add.sprite(players[id].x, players[id].y, 'pinkie-idle');
                         player.char = "pinkie";
                         player.setSize(14, 27);
                         player.setOffset(8, 5);
@@ -168,7 +168,7 @@ export class HomeStage extends Phaser.Scene {
                 } else {
                     var otherPlayer = players[id];
                     if(otherPlayer.char === "owlet") {
-                        player2 = self.physics.add.sprite(100, 300, 'owlet-idle');    
+                        player2 = self.physics.add.sprite(players[id].x, players[id].y, 'owlet-idle');    
                         player2.setSize(14, 27);
                         player2.setOffset(8, 5);
                         player2.setBounce(0.1);
@@ -177,7 +177,7 @@ export class HomeStage extends Phaser.Scene {
                         self.physics.add.collider(player2, platforms);   
                         player2.anims.play('owlet-idle', true);
                     } else {
-                        player2 = self.physics.add.sprite(100, 700, 'pinkie-idle');    
+                        player2 = self.physics.add.sprite(players[id].x, players[id].y, 'pinkie-idle');    
                         player2.setSize(14, 27);
                         player2.setOffset(8, 5);
                         player2.setBounce(0.1);
@@ -188,6 +188,10 @@ export class HomeStage extends Phaser.Scene {
                     }
                 }
             });
+        })
+
+        this.socket.on('disconnectedPlayer', () => {
+            player2.destroy();
         })
 
         this.socket.on('playerMoved', function (playerInfo) {

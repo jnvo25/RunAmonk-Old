@@ -18,7 +18,7 @@ io.on('connection', function (socket) {
   // Generate owl data and send to client
   if (owlets > pinkies) {
     players[socket.id] = {
-      x: 100,
+      x: 700,
       y: 300,
       char: 'pinkie',
       playerId: socket.id
@@ -48,6 +48,18 @@ io.on('connection', function (socket) {
     players[socket.id].anim = movementData.anim;
     // emit a message to all players about the player that moved
     socket.broadcast.emit('playerMoved', players[socket.id]);
+  });
+
+  // when a player disconnects, remove them from our players object
+  socket.on('disconnect', function () {
+    console.log('user disconnected: ', socket.id);
+    if (players[socket.id].char == "pinkie") 
+      pinkies--;
+    else
+      owlets--;
+    delete players[socket.id];
+    // emit a message to all players to remove this player
+    io.emit('disconnectedPlayer', socket.id);
   });
 
 });
