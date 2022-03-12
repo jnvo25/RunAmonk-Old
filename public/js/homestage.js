@@ -5,13 +5,8 @@ var player2Score;
 var p1text;
 var p2text;
 var cursors;
-var roundOver;
 var gameStarted;
 
-let keyA;
-let keyS;
-let keyD;
-let keyW;
 export class HomeStage extends Phaser.Scene {
     constructor() {
         super('HomeStage');
@@ -37,11 +32,6 @@ export class HomeStage extends Phaser.Scene {
     }
 
     create() {
-
-        keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-        keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-        keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-        keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
 
         const backgroundImage = this.add.image(0,0, 'background').setOrigin(0,0);
         backgroundImage.setScale(2, 0.8);
@@ -147,7 +137,6 @@ export class HomeStage extends Phaser.Scene {
 
         playerScore = 0;
         player2Score = 0;
-        roundOver = false;
 
         p1text = this.add.text(10, 10, "Player 1: " + playerScore, {backgroundColor: "#ffo"});
         p2text = this.add.text(10, 30, "Player 2: " + player2Score, {backgroundColor: "#ffo"});
@@ -184,21 +173,6 @@ export class HomeStage extends Phaser.Scene {
             } else {
                 player.setVelocityX(0);
                 player.anims.play('owlet-idle', true);
-            }
-
-            if (keyW.isDown && player2.body.onFloor()) {
-                player2.setVelocityY(-400);
-            } else if (keyA.isDown) {
-                player2.setVelocityX(-160);
-                player2.setFlipX(true);
-                player2.anims.play('pinkie-run', true);
-            } else if (keyD.isDown) {
-                player2.setVelocityX(160);
-                player2.setFlipX(false);
-                player2.anims.play('pinkie-run', true);
-            } else {
-                player2.setVelocityX(0);
-                player2.anims.play('pinkie-idle', true);
             }
         }
     }
