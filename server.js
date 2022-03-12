@@ -24,8 +24,8 @@ io.on('connection', function (socket) {
       // y: 300,
       x: 200,
       y: 300,
-      
       char: 'pinkie',
+      isChaser: true,
       playerId: socket.id
     }
     pinkies++;
@@ -34,6 +34,7 @@ io.on('connection', function (socket) {
       x: 100,
       y: 300,
       char: 'owlet',
+      isChaser: false,
       playerId: socket.id
     }
     owlets++;

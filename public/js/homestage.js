@@ -8,7 +8,7 @@ var cursors;
 var gameStarted;
 var playerGenerated;
 var otherPlayers;
-var taggers;
+var chasers;
 var runners;
 
 export class HomeStage extends Phaser.Scene {
@@ -129,10 +129,9 @@ export class HomeStage extends Phaser.Scene {
         // Create players
         
         playerGenerated = false;
-        taggers = this.add.group();
+        chasers = this.add.group();
         runners = this.add.group();
-        self.physics.add.overlap(runners,taggers, (player1, player2) => {
-            // console.log(taggers.contains(player1));
+        self.physics.add.overlap(runners,chasers, (player1, player2) => {
             console.log(player1.playerId);
             this.handleTag(runners.contains(player1) ? player1 : player2);
             playerGenerated = true;
@@ -204,8 +203,8 @@ export class HomeStage extends Phaser.Scene {
         temp.setBounce(0.1);
         temp.setCollideWorldBounds(true);
         temp.isTagged = false;
-        if(playerInfo.char === "pinkie") {
-            taggers.add(temp);
+        if(playerInfo.isChaser) {
+            chasers.add(temp);
         } else {
             runners.add(temp);
         }
@@ -231,7 +230,6 @@ export class HomeStage extends Phaser.Scene {
         
         if(gameStarted && playerGenerated && !player.tagged) {
             
-            // console.log(this.taggers);
             if (cursors.up.isDown && player.body.onFloor()) {
                 player.setVelocityY(-400);
             } else if (cursors.left.isDown) {
