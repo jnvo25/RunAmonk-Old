@@ -45,53 +45,15 @@ export class HomeStage extends Phaser.Scene {
         const platforms = map.createStaticLayer('Platforms', tileset, 0, 0);
         platforms.setCollisionByExclusion(-1, true);
 
-        this.anims.create({
-            key: 'owlet-idle',
-            frames: this.anims.generateFrameNumbers('owlet-idle', {start: 0, end: 4}),
-            frameRate: 10,
-            repeat: -1
-        });
+        this.createAnimation('owlet-idle', 4, true);
+        this.createAnimation('owlet-run', 6, true);
+        this.createAnimation('owlet-jump', 8, true);
+        this.createAnimation('owlet-death', 8, false);
 
-        this.anims.create({
-            key: 'owlet-run',
-            frames: this.anims.generateFrameNumbers('owlet-run', {start: 0, end: 6}),
-            frameRate: 10,
-            repeat: -1
-        });
-
-        this.anims.create({
-            key: 'owlet-jump',
-            frames: this.anims.generateFrameNumbers('owlet-jump', {start: 0, end: 8}),
-            frameRate: 10,
-            repeat: -1
-        });
-
-        this.anims.create({
-            key: 'owlet-death',
-            frames: this.anims.generateFrameNumbers('owlet-death', {start: 0, end: 8}),
-            frameRate: 10
-        });
-
-        this.anims.create({
-            key: 'pinkie-idle',
-            frames: this.anims.generateFrameNumbers('pinkie-idle', {start: 0, end: 4}),
-            frameRate: 10,
-            repeat: -1
-        })
-
-        this.anims.create({
-            key: 'pinkie-run',
-            frames: this.anims.generateFrameNumbers('pinkie-run', {start: 0, end: 6}),
-            frameRate: 10,
-            repeat: -1
-        })
-
-        this.anims.create({
-            key: 'pinkie-jump',
-            frames: this.anims.generateFrameNumbers('pinkie-jump', {start: 0, end: 8}),
-            frameRate: 10,
-            repeat: -1
-        })
+        this.createAnimation('pinkie-idle', 4, true);
+        this.createAnimation('pinkie-run', 6, true);
+        this.createAnimation('pinkie-jump', 8, true);
+        this.createAnimation('pinkie-death', 8, false);
 
         cursors = this.input.keyboard.createCursorKeys();
 
@@ -113,9 +75,7 @@ export class HomeStage extends Phaser.Scene {
                 })
             })
         })
-
         
-
         playerScore = 0;
         player2Score = 0;
 
@@ -126,8 +86,6 @@ export class HomeStage extends Phaser.Scene {
         this.socket = io();
         otherPlayers = new Set();
 
-        // Create players
-        
         playerGenerated = false;
         chasers = this.add.group();
         runners = this.add.group();
@@ -152,29 +110,18 @@ export class HomeStage extends Phaser.Scene {
         })
 
         this.socket.on('taggedPlayer', (tagData) => {
-            console.log(tagData)
-            console.log(player.playerId, tagData.playerId);
             if(player.playerId === tagData.playerId) {
-                console.log("I die")
                 player.tagged = true;
                 player.anims.play('owlet-death');
             }
              else {
-                 otherPlayers.forEach(function (otherPlayer) {
-                if(otherPlayer.playerId === tagData.playerId) {
-                    otherPlayer.anims.play('owlet-death');
-                } 
-            });
-        }
+                otherPlayers.forEach(function (otherPlayer) {
+                    if(otherPlayer.playerId === tagData.playerId) {
+                        otherPlayer.anims.play('owlet-death');
+                    } 
+                });
+            }
         });
-
-        this.socket.on('disconnectedPlayer', (playerId) => {            
-            otherPlayers.forEach(function (otherPlayer) {
-                if(otherPlayer.playerId === playerId) {
-                    otherPlayer.destroy();
-                }
-            });
-        })
 
         this.socket.on('playerMoved', function (playerInfo) {
             otherPlayers.forEach(function (otherPlayer) {
@@ -184,13 +131,33 @@ export class HomeStage extends Phaser.Scene {
                     otherPlayer.anims.play(playerInfo.anim, true);
                 }
             });
-          });
+        });
 
         this.socket.on('newPlayer', function (playerInfo) {
             var otherPlayer = self.createPlayer(self, playerInfo);
             self.physics.add.collider(otherPlayer, platforms);
             otherPlayers.add(otherPlayer);
         });
+
+        this.socket.on('disconnectedPlayer', (playerId) => {            
+            otherPlayers.forEach(function (otherPlayer) {
+                if(otherPlayer.playerId === playerId) {
+                    otherPlayer.destroy();
+                }
+            });
+        })
+    }
+
+    createAnimation(name, frames, repeat) {
+        var config = {
+            key: name,
+            frames: this.anims.generateFrameNumbers(name, {start: 0, end: frames}),
+            frameRate: 10
+        };
+        if (repeat) {
+            config['repeat'] = -1;
+        }
+        this.anims.create(config);
     }
 
     createPlayer(self, playerInfo) {
@@ -223,9 +190,6 @@ export class HomeStage extends Phaser.Scene {
         //         })
         //     })
         // }
-
-
-        // // Define chaser
         
         
         if(gameStarted && playerGenerated && !player.tagged) {
@@ -245,21 +209,19 @@ export class HomeStage extends Phaser.Scene {
                 player.anims.play(player.char + '-idle', true);
             }
             
-            if(player.oldPosition && (player.x !== player.oldPosition.x || player.y !== player.oldPosition.y)) {
-                this.socket.emit('playerMovement', { 
-                    x: player.x,
-                    y: player.y,
-                    flip: player.flipX,
-                    anim: player.anims.getCurrentKey()
-                });
-            }
-            // save old position
-            player.oldPosition = {
+            const position = { 
                 x: player.x,
                 y: player.y,
                 flip: player.flipX,
                 anim: player.anims.getCurrentKey()
-            }      
+            }
+
+            if(player.oldPosition && (player.x !== player.oldPosition.x || player.y !== player.oldPosition.y)) {
+                this.socket.emit('playerMovement', position);
+            }
+            
+            // save old position
+            player.oldPosition = position;
         }
     }
 
