@@ -175,6 +175,7 @@ export class HomeStage extends Phaser.Scene {
                         player2.setCollideWorldBounds(true);
                         player2.isTagged = false;
                         self.physics.add.collider(player2, platforms);   
+                        player2.anims.play('owlet-idle', true);
                     } else {
                         player2 = self.physics.add.sprite(100, 700, 'pinkie-idle');    
                         player2.setSize(14, 27);
@@ -183,6 +184,7 @@ export class HomeStage extends Phaser.Scene {
                         player2.setCollideWorldBounds(true);
                         player2.isTagged = false;
                         self.physics.add.collider(player2, platforms); 
+                        player2.anims.play('pinkie-idle', true);
                     }
                 }
             });
@@ -191,7 +193,10 @@ export class HomeStage extends Phaser.Scene {
         this.socket.on('playerMoved', function (playerInfo) {
             console.log("player has moved!");
             console.log(playerInfo);
+            // player2.setPosition(playerInfo.x, playerInfo.y);
             player2.setPosition(playerInfo.x, playerInfo.y);
+            player2.setFlipX(playerInfo.flip);
+            player2.anims.play(playerInfo.anim, true);
             // self.otherPlayers.getChildren().forEach(function (otherPlayer) {
             //   if (playerInfo.playerId === otherPlayer.playerId) {
             //     otherPlayer.setRotation(playerInfo.rotation);
@@ -207,6 +212,7 @@ export class HomeStage extends Phaser.Scene {
             } else {
                 player2 = self.physics.add.sprite(100, 300, 'pinkie-idle');    
             }
+            
             player2.setSize(14, 27);
             player2.setOffset(8, 5);
             player2.setBounce(0.1);
@@ -260,15 +266,25 @@ export class HomeStage extends Phaser.Scene {
                 else
                     player.anims.play('pinkie-idle', true);
             }
-
-            // emit position change if changed
+            
             if(player.oldPosition && (player.x !== player.oldPosition.x || player.y !== player.oldPosition.y)) {
-                this.socket.emit('playerMovement', { x: player.x, y: player.y});
+                this.socket.emit('playerMovement', { 
+                    x: player.x,
+                    y: player.y,
+                    velX: player.body.velocity.x,
+                    velY: player.body.velocity.y,
+                    flip: player.flipX,
+                    anim: player.anims.getCurrentKey()
+                });
             }
             // save old position
             player.oldPosition = {
                 x: player.x,
-                y: player.y
+                y: player.y,
+                velX: player.velocityX,
+                velY: player.velocityY,
+                flip: player.flipX,
+                anim: player.anims.getCurrentKey()
             }      
         }
     }
