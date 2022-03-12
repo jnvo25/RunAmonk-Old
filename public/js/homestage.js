@@ -151,10 +151,30 @@ export class HomeStage extends Phaser.Scene {
                     player.isTagged = false;
                     self.physics.add.collider(player, platforms);
                     playerGenerated = true;
+                } else {
+                    player2 = self.physics.add.sprite(100, 300, 'owlet-idle');    
+                    player2.setSize(14, 27);
+                    player2.setOffset(8, 5);
+                    player2.setBounce(0.1);
+                    player2.setCollideWorldBounds(true);
+                    player2.isTagged = false;
+                    self.physics.add.collider(player2, platforms);
                 }
             });
-        }) 
-        
+        })
+
+        this.socket.on('playerMoved', function (playerInfo) {
+            console.log("player has moved!");
+            console.log(playerInfo);
+            player2.setPosition(playerInfo.x, playerInfo.y);
+            // self.otherPlayers.getChildren().forEach(function (otherPlayer) {
+            //   if (playerInfo.playerId === otherPlayer.playerId) {
+            //     otherPlayer.setRotation(playerInfo.rotation);
+            //     otherPlayer.setPosition(playerInfo.x, playerInfo.y);
+            //   }
+            // });
+          });
+
         this.socket.on('newPlayer', function (playerInfo) {
             console.log("ASFASDF");
             player2 = self.physics.add.sprite(100, 300, 'owlet-idle');    
@@ -202,6 +222,16 @@ export class HomeStage extends Phaser.Scene {
                 player.setVelocityX(0);
                 player.anims.play('owlet-idle', true);
             }
+
+            // emit position change if changed
+            if(player.oldPosition && (player.x !== player.oldPosition.x || player.y !== player.oldPosition.y)) {
+                this.socket.emit('playerMovement', { x: player.x, y: player.y});
+            }
+            // save old position
+            player.oldPosition = {
+                x: player.x,
+                y: player.y
+            }      
         }
     }
 
