@@ -12,14 +12,19 @@ app.get('/', function (req, res) {
 var players = {};
 var owlets = 0;
 var pinkies = 0;
+var runnerScore = 0;
+var taggerScore = 0;
 io.on('connection', function (socket) {
   console.log('a user connected: ', socket.id);
 
   // Generate owl data and send to client
   if (owlets > pinkies) {
     players[socket.id] = {
-      x: 700,
+      // x: 700,
+      // y: 300,
+      x: 200,
       y: 300,
+      
       char: 'pinkie',
       playerId: socket.id
     }
@@ -49,6 +54,15 @@ io.on('connection', function (socket) {
     // emit a message to all players about the player that moved
     socket.broadcast.emit('playerMoved', players[socket.id]);
   });
+
+  socket.on('tag', (playerId) => {
+    taggerScore += 5;
+    io.emit('taggedPlayer', {
+      playerId: playerId,
+      taggerScore: taggerScore
+    });
+    
+  })
 
   // when a player disconnects, remove them from our players object
   socket.on('disconnect', function () {

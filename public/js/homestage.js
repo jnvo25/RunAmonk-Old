@@ -8,6 +8,8 @@ var cursors;
 var gameStarted;
 var playerGenerated;
 var otherPlayers;
+var taggers;
+var runners;
 
 export class HomeStage extends Phaser.Scene {
     constructor() {
@@ -34,7 +36,7 @@ export class HomeStage extends Phaser.Scene {
     }
 
     create() {
-
+        console.log("V1.0");
         const backgroundImage = this.add.image(0,0, 'background').setOrigin(0,0);
         backgroundImage.setScale(2, 0.8);
 
@@ -112,12 +114,7 @@ export class HomeStage extends Phaser.Scene {
             })
         })
 
-        // player.on('animationcomplete', () => {
-        //     if(player.anims.currentAnim.key === 'owlet-death') {
-        //         player.isTagged = true;
-
-        //     }
-        // })
+        
 
         playerScore = 0;
         player2Score = 0;
@@ -129,12 +126,23 @@ export class HomeStage extends Phaser.Scene {
         this.socket = io();
         otherPlayers = new Set();
 
-        // Create player 1
+        // Create players
+        
         playerGenerated = false;
-        this.socket.on('currentPlayers', (players) => {
+        taggers = this.add.group();
+        runners = this.add.group();
+        self.physics.add.overlap(runners,taggers, (player1, player2) => {
+            // console.log(taggers.contains(player1));
+            console.log(player1.playerId);
+            this.handleTag(runners.contains(player1) ? player1 : player2);
+        });
+
+        this.socket.on('currentPlayers', (players) => {    
+            console.log("I am " + self.socket.id);
             Object.keys(players).forEach((id) => {
                 if(players[id].playerId == self.socket.id) {
                     player = self.physics.add.sprite(players[id].x, players[id].y, players[id].char + '-idle');
+                    player.playerId = id;
                     player.char = players[id].char;
                     player.setSize(14, 27);
                     player.setOffset(8, 5);
@@ -143,9 +151,15 @@ export class HomeStage extends Phaser.Scene {
                     player.isTagged = false;
                     self.physics.add.collider(player, platforms);
                     playerGenerated = true;
+                    if(players[id].char === "pinkie") {
+                        taggers.add(player);
+                    } else {
+                        runners.add(player);
+                    }
                 } else {
-                    var otherPlayer = self.physics.add.sprite(players[id].x, players[id].y, players[id].char + '-idle');    
+                    var otherPlayer = self.physics.add.sprite(players[id].x, players[id].y, players[id].char + '-idle');  
                     otherPlayer.playerId = players[id].playerId;
+                    otherPlayer.char = players[id].char;
                     otherPlayer.setSize(14, 27);
                     otherPlayer.setOffset(8, 5);
                     otherPlayer.setBounce(0.1);
@@ -154,14 +168,34 @@ export class HomeStage extends Phaser.Scene {
                     self.physics.add.collider(otherPlayer, platforms);   
                     otherPlayer.anims.play(players[id].char + '-idle', true);
                     otherPlayers.add(otherPlayer);
+                    if(players[id].char === "pinkie") {
+                        taggers.add(otherPlayer);
+                    } else {
+                        runners.add(otherPlayer);
+                    }
                 }
             });
         })
 
-        this.socket.on('disconnectedPlayer', (playerId) => {
-            
+        this.socket.on('taggedPlayer', (tagData) => {
+            console.log(tagData)
+            console.log(player.playerId, tagData.playerId);
+            if(player.playerId === tagData.playerId) {
+                console.log("I die")
+                player.tagged = true;
+                player.anims.play('owlet-death');
+            }
+             else {
+                 otherPlayers.forEach(function (otherPlayer) {
+                if(otherPlayer.playerId === tagData.playerId) {
+                    otherPlayer.anims.play('owlet-death');
+                } 
+            });
+        }
+        });
+
+        this.socket.on('disconnectedPlayer', (playerId) => {            
             otherPlayers.forEach(function (otherPlayer) {
-                console.log(otherPlayer.playerId, playerId);
                 if(otherPlayer.playerId === playerId) {
                     otherPlayer.destroy();
                 }
@@ -181,12 +215,18 @@ export class HomeStage extends Phaser.Scene {
         this.socket.on('newPlayer', function (playerInfo) {
             var otherPlayer = self.physics.add.sprite(playerInfo.x, playerInfo.y, playerInfo.char + '-idle');    
             otherPlayer.playerId = playerInfo.playerId;
+            otherPlayer.char = playerInfo.char;
             otherPlayer.setSize(14, 27);
             otherPlayer.setOffset(8, 5);
             otherPlayer.setBounce(0.1);
             otherPlayer.setCollideWorldBounds(true);
             otherPlayer.isTagged = false;
             self.physics.add.collider(otherPlayer, platforms);
+            if(playerInfo.char === "pinkie") {
+                taggers.add(otherPlayer);
+            } else {
+                runners.add(otherPlayer);
+            }
             otherPlayers.add(otherPlayer);
         });
         
@@ -209,39 +249,30 @@ export class HomeStage extends Phaser.Scene {
 
 
         // // Define chaser
-        // this.physics.collide(player, player2, this.tagged);
-
-        if(gameStarted && playerGenerated) {
+        
+        
+        if(gameStarted && playerGenerated && !player.tagged) {
+            
+            // console.log(this.taggers);
             if (cursors.up.isDown && player.body.onFloor()) {
                 player.setVelocityY(-400);
             } else if (cursors.left.isDown) {
                 player.setVelocityX(-160);
                 player.setFlipX(true);
-                if(player.char === "owlet")
-                    player.anims.play('owlet-run', true);
-                else
-                    player.anims.play('pinkie-run', true);
+                player.anims.play(player.char + '-run', true);
             } else if (cursors.right.isDown) {
                 player.setVelocityX(160);
                 player.setFlipX(false);
-                if(player.char === "owlet")
-                    player.anims.play('owlet-run', true);
-                else
-                    player.anims.play('pinkie-run', true);
+                player.anims.play(player.char + '-run', true);
             } else {
                 player.setVelocityX(0);
-                if(player.char === "owlet")
-                    player.anims.play('owlet-idle', true);
-                else
-                    player.anims.play('pinkie-idle', true);
+                player.anims.play(player.char + '-idle', true);
             }
             
             if(player.oldPosition && (player.x !== player.oldPosition.x || player.y !== player.oldPosition.y)) {
                 this.socket.emit('playerMovement', { 
                     x: player.x,
                     y: player.y,
-                    velX: player.body.velocity.x,
-                    velY: player.body.velocity.y,
                     flip: player.flipX,
                     anim: player.anims.getCurrentKey()
                 });
@@ -250,23 +281,18 @@ export class HomeStage extends Phaser.Scene {
             player.oldPosition = {
                 x: player.x,
                 y: player.y,
-                velX: player.velocityX,
-                velY: player.velocityY,
                 flip: player.flipX,
                 anim: player.anims.getCurrentKey()
             }      
         }
     }
 
-    tagged (player, player2) {
-        if(gameStarted) {
-            if(!player.isTagged) {
-                gameStarted = false;
-                player.anims.play('owlet-death');
-                player2Score += 5
-                player.setVelocity(0, 0);
-                p2text.setText("Player 2: " + player2Score);
-            }
+    handleTag (taggedPlayer) {
+        if(!taggedPlayer.isTagged) {
+            this.socket.emit('tag', taggedPlayer.playerId);
+            taggedPlayer.isTagged = true;
+            taggedPlayer.anims.play('owlet-death');
+            taggedPlayer.setVelocity(0, 0);
         }
     }
 
@@ -276,8 +302,7 @@ export class HomeStage extends Phaser.Scene {
         player2.setPosition(700, 300);
         player.setVelocity(0, 0);
         player2.setVelocity(0, 0);
-        player.anims.play('owlet-idle', true);
-        player2.anims.play('pinkie-idle', true);
+        player.anims.play(player.char + '-idle', true);
     }
 }
 
