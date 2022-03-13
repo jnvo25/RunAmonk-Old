@@ -50,6 +50,8 @@ io.on('connection', function (socket) {
   socket.on('playerMovement', function (movementData) {
     players[socket.id].x = movementData.x;
     players[socket.id].y = movementData.y;
+    players[socket.id].velX = movementData.velX;
+    players[socket.id].velY = movementData.velY;
     players[socket.id].flip = movementData.flip;
     players[socket.id].anim = movementData.anim;
     // emit a message to all players about the player that moved
@@ -62,7 +64,6 @@ io.on('connection', function (socket) {
       playerId: playerId,
       taggerScore: taggerScore
     });
-    
   })
 
   // when a player disconnects, remove them from our players object

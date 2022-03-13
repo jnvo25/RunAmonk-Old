@@ -126,7 +126,7 @@ export class HomeStage extends Phaser.Scene {
         this.socket.on('playerMoved', function (playerInfo) {
             otherPlayers.forEach(function (otherPlayer) {
                 if(otherPlayer.playerId === playerInfo.playerId) {
-                    otherPlayer.setPosition(playerInfo.x, playerInfo.y);
+                    otherPlayer.setVelocity(playerInfo.velX, playerInfo.velY);
                     otherPlayer.setFlipX(playerInfo.flip);
                     otherPlayer.anims.play(playerInfo.anim, true);
                 }
@@ -167,7 +167,6 @@ export class HomeStage extends Phaser.Scene {
         temp.char = playerInfo.char;
         temp.setSize(14, 27);
         temp.setOffset(8, 5);
-        temp.setBounce(0.1);
         temp.setCollideWorldBounds(true);
         temp.isTagged = false;
         if(playerInfo.isChaser) {
@@ -212,14 +211,16 @@ export class HomeStage extends Phaser.Scene {
             const position = { 
                 x: player.x,
                 y: player.y,
+                velX: player.body.velocity.x,
+                velY: player.body.velocity.y,
                 flip: player.flipX,
                 anim: player.anims.getCurrentKey()
             }
 
-            if(player.oldPosition && (player.x !== player.oldPosition.x || player.y !== player.oldPosition.y)) {
+            if(player.oldPosition && (player.body.velocity.x !== player.oldPosition.velX || player.body.velocity.y !== player.oldPosition.velY)) {
                 this.socket.emit('playerMovement', position);
             }
-            
+
             // save old position
             player.oldPosition = position;
         }
