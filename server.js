@@ -20,9 +20,7 @@ io.on('connection', function (socket) {
   // Generate owl data and send to client
   if (owlets > pinkies) {
     players[socket.id] = {
-      // x: 700,
-      // y: 300,
-      x: 200,
+      x: 700,
       y: 300,
       char: 'pinkie',
       isChaser: true,
@@ -48,14 +46,22 @@ io.on('connection', function (socket) {
 
   // when a player moves, update the player data
   socket.on('playerMovement', function (movementData) {
-    players[socket.id].x = movementData.x;
-    players[socket.id].y = movementData.y;
-    players[socket.id].velX = movementData.velX;
-    players[socket.id].velY = movementData.velY;
-    players[socket.id].flip = movementData.flip;
-    players[socket.id].anim = movementData.anim;
+    movedPlayer = players[socket.id];
+    movedPlayer.x = movementData.x;
+    movedPlayer.y = movementData.y;
+    movedPlayer.velX = movementData.velX;
+    movedPlayer.velY = movementData.velY;
+    movedPlayer.flip = movementData.flip;
+    movedPlayer.anim = movementData.anim;
+
     // emit a message to all players about the player that moved
-    socket.broadcast.emit('playerMoved', players[socket.id]);
+    socket.broadcast.emit('playerMoved', {
+      playerId: socket.id,
+      velX: movedPlayer.velX,
+      velY: movedPlayer.velY,
+      flip: movedPlayer.flip,
+      anim: movedPlayer.anim
+    });
   });
 
   socket.on('tag', (playerId) => {

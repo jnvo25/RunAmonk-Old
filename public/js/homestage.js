@@ -1,11 +1,5 @@
 var player;
-var player2;
-var playerScore;
-var player2Score;
-var p1text;
-var p2text;
 var cursors;
-var gameStarted;
 var playerGenerated;
 var otherPlayers;
 var chasers;
@@ -18,17 +12,18 @@ export class HomeStage extends Phaser.Scene {
 
     preload() {
 
-        // Player 1 assets
+        // Load Owlet assets
         this.load.spritesheet('owlet-idle', 'assets/Owlet_Monster/Owlet_Monster_Idle_4.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('owlet-run', 'assets/Owlet_Monster/Owlet_Monster_Run_6.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('owlet-jump', 'assets/Owlet_Monster/Owlet_Monster_Jump_8.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('owlet-death', 'assets/Owlet_Monster/Owlet_Monster_Death_8.png', { frameWidth: 32, frameHeight: 32 });
 
-        // Player 2 assets
+        // Load Pinkie assets
         this.load.spritesheet('pinkie-idle', 'assets/Pink_Monster/Pink_Monster_Idle_4.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('pinkie-run', 'assets/Pink_Monster/Pink_Monster_Run_6.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('pinkie-jump', 'assets/Pink_Monster/Pink_Monster_Jump_8.png', { frameWidth: 32, frameHeight: 32 });
 
+        // Load stage assets
         this.load.image('background', 'assets/maps/images/background.png');
         this.load.image('spike', 'assets/maps/images/spike.png');
         this.load.image('tiles', 'assets/maps/tilesets/terrain_tilesheet.png');
@@ -36,7 +31,7 @@ export class HomeStage extends Phaser.Scene {
     }
 
     create() {
-        console.log("V1.0");
+        // Create stage
         const backgroundImage = this.add.image(0,0, 'background').setOrigin(0,0);
         backgroundImage.setScale(2, 0.8);
 
@@ -45,6 +40,7 @@ export class HomeStage extends Phaser.Scene {
         const platforms = map.createStaticLayer('Platforms', tileset, 0, 0);
         platforms.setCollisionByExclusion(-1, true);
 
+        // Create animations
         this.createAnimation('owlet-idle', 4, true);
         this.createAnimation('owlet-run', 6, true);
         this.createAnimation('owlet-jump', 8, true);
@@ -54,47 +50,28 @@ export class HomeStage extends Phaser.Scene {
         this.createAnimation('pinkie-run', 6, true);
         this.createAnimation('pinkie-jump', 8, true);
         this.createAnimation('pinkie-death', 8, false);
-
-        cursors = this.input.keyboard.createCursorKeys();
-
-
-        // Print instructions onto screen
-        gameStarted = false;
-        displayText(this, "Welcome to 40521 the Game", 3, ()=> {
-            displayText(this, "You have 2 minutes to tag the other player", 3, ()=> {
-                displayText(this, "We will now select a player to be it", 3, ()=> {
-                    displayText(this, "Pinkie is it!", 3, ()=> {
-                        displayText(this, "Game starting in 3...", 1, ()=> {
-                            displayText(this, "Game starting in 2...", 1, ()=> {
-                                displayText(this, "Game starting in 1...", 1, ()=> {
-                                    gameStarted = true;
-                                })
-                            })
-                        })
-                    })
-                })
-            })
-        })
         
-        playerScore = 0;
-        player2Score = 0;
-
-        p1text = this.add.text(10, 10, "Player 1: " + playerScore, {backgroundColor: "#ffo"});
-        p2text = this.add.text(10, 30, "Player 2: " + player2Score, {backgroundColor: "#ffo"});
-
-        var self = this;
+        // Initialize cursors to take in user input in update()
+        cursors = this.input.keyboard.createCursorKeys();
+        
+        // Create connection to server
         this.socket = io();
+        var self = this;    // Sometimes sockets don't like "this" so define this outside and pass in
         otherPlayers = new Set();
 
+        // Loading progress variables
         playerGenerated = false;
+
+        // Define game roles and implement overlap callback
         chasers = this.add.group();
         runners = this.add.group();
         self.physics.add.overlap(runners,chasers, (player1, player2) => {
-            console.log(player1.playerId);
             this.handleTag(runners.contains(player1) ? player1 : player2);
-            playerGenerated = true;
         });
 
+        // Condition: When this client joins an active game
+        // Parameter: List of players with positional data
+        // Handling: For each existing player, places character on screen based on data
         this.socket.on('currentPlayers', (players) => {    
             Object.keys(players).forEach((id) => {
                 if(players[id].playerId == self.socket.id) {
@@ -109,6 +86,9 @@ export class HomeStage extends Phaser.Scene {
             });
         })
 
+        // Condition: Notification a player has been tagged by another player
+        // Parameter: PlayerId
+        // Handling: Check if its current player and play death animation accordingly
         this.socket.on('taggedPlayer', (tagData) => {
             if(player.playerId === tagData.playerId) {
                 player.tagged = true;
@@ -123,6 +103,9 @@ export class HomeStage extends Phaser.Scene {
             }
         });
 
+        // Condition: Notification a player has moved position
+        // Parameter: Player's velocity, flip, and animation
+        // Handling: Search for player and update
         this.socket.on('playerMoved', function (playerInfo) {
             otherPlayers.forEach(function (otherPlayer) {
                 if(otherPlayer.playerId === playerInfo.playerId) {
@@ -133,12 +116,18 @@ export class HomeStage extends Phaser.Scene {
             });
         });
 
+        // Condition: Notification a new player joined
+        // Parameter: Player's positional and visual data
+        // Handling: Add player to client's list
         this.socket.on('newPlayer', function (playerInfo) {
             var otherPlayer = self.createPlayer(self, playerInfo);
             self.physics.add.collider(otherPlayer, platforms);
             otherPlayers.add(otherPlayer);
         });
 
+        // Condition: Notification a player disconnected
+        // Parameter: Player's id
+        // Handling: Remove player from client's list
         this.socket.on('disconnectedPlayer', (playerId) => {            
             otherPlayers.forEach(function (otherPlayer) {
                 if(otherPlayer.playerId === playerId) {
@@ -148,50 +137,8 @@ export class HomeStage extends Phaser.Scene {
         })
     }
 
-    createAnimation(name, frames, repeat) {
-        var config = {
-            key: name,
-            frames: this.anims.generateFrameNumbers(name, {start: 0, end: frames}),
-            frameRate: 10
-        };
-        if (repeat) {
-            config['repeat'] = -1;
-        }
-        this.anims.create(config);
-    }
-
-    createPlayer(self, playerInfo) {
-        var temp = self.physics.add.sprite(playerInfo.x, playerInfo.y, playerInfo.char + '-idle');
-        temp.anims.play(playerInfo.char + '-idle', true);
-        temp.playerId = playerInfo.playerId;
-        temp.char = playerInfo.char;
-        temp.setSize(14, 27);
-        temp.setOffset(8, 5);
-        temp.setCollideWorldBounds(true);
-        temp.isTagged = false;
-        if(playerInfo.isChaser) {
-            chasers.add(temp);
-        } else {
-            runners.add(temp);
-        }
-        return temp;
-    }
-
     update() {
-
-        // if(player.isTagged) {
-        //     this.endRound();
-        //     displayText(this, "Game starting in 3...", 1000, ()=> {
-        //         displayText(this, "Game starting in 2...", 1000, ()=> {
-        //             displayText(this, "Game starting in 1...", 1000, ()=> {
-        //                 gameStarted = true;
-        //             })
-        //         })
-        //     })
-        // }
-        
-        
-        if(gameStarted && playerGenerated && !player.tagged) {
+        if(playerGenerated && !player.tagged) {
             
             if (cursors.up.isDown && player.body.onFloor()) {
                 player.setVelocityY(-400);
@@ -226,6 +173,8 @@ export class HomeStage extends Phaser.Scene {
         }
     }
 
+    // HELPER FUNCTIONS
+    // On tag, notify server of player's id and handle tagged player
     handleTag (taggedPlayer) {
         if(!taggedPlayer.isTagged) {
             this.socket.emit('tag', taggedPlayer.playerId);
@@ -235,13 +184,35 @@ export class HomeStage extends Phaser.Scene {
         }
     }
 
-    endRound () {
-        player.isTagged = false;
-        player.setPosition(100,300);
-        player2.setPosition(700, 300);
-        player.setVelocity(0, 0);
-        player2.setVelocity(0, 0);
-        player.anims.play(player.char + '-idle', true);
+    // Add animation to phaser
+    createAnimation(name, frames, repeat) {
+        var config = {
+            key: name,
+            frames: this.anims.generateFrameNumbers(name, {start: 0, end: frames}),
+            frameRate: 10
+        };
+        if (repeat) {
+            config['repeat'] = -1;
+        }
+        this.anims.create(config);
+    }
+
+    // Create player object with physics
+    createPlayer(self, playerInfo) {
+        var temp = self.physics.add.sprite(playerInfo.x, playerInfo.y, playerInfo.char + '-idle');
+        temp.anims.play(playerInfo.char + '-idle', true);
+        temp.playerId = playerInfo.playerId;
+        temp.char = playerInfo.char;
+        temp.setSize(14, 27);
+        temp.setOffset(8, 5);
+        temp.setCollideWorldBounds(true);
+        temp.isTagged = false;
+        if(playerInfo.isChaser) {
+            chasers.add(temp);
+        } else {
+            runners.add(temp);
+        }
+        return temp;
     }
 }
 
