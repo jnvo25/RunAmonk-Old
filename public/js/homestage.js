@@ -5,6 +5,7 @@ var otherPlayers;
 var chasers;
 var runners;
 var lastUpdated;
+let spacebar;
 
 export class HomeStage extends Phaser.Scene {
     constructor() {
@@ -155,6 +156,8 @@ export class HomeStage extends Phaser.Scene {
             });
         })
 
+        // Initialize helpers
+        spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         lastUpdated = Date.now();
     }
 
@@ -162,6 +165,8 @@ export class HomeStage extends Phaser.Scene {
         if(playerGenerated && !player.tagged) {
             
             if (cursors.up.isDown && player.body.onFloor()) {
+                player.setVelocityY(-400);
+            } else if (spacebar.isDown && player.body.onFloor()) {
                 player.setVelocityY(-400);
             } else if (cursors.left.isDown) {
                 player.setVelocityX(-160);
@@ -187,7 +192,6 @@ export class HomeStage extends Phaser.Scene {
 
             if(player.oldPosition && (player.body.velocity.x !== player.oldPosition.velX || player.body.velocity.y !== player.oldPosition.velY)) {
                 this.socket.emit('playerMovement', position);
-                lastUpdated = Date.now();
             } else {
                 if(Date.now()-lastUpdated > 1000) {
                     lastUpdated = Date.now();
