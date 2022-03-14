@@ -12,18 +12,28 @@ app.get('/', function (req, res) {
 var players = {};
 var owlets = 0;
 var pinkies = 0;
+var monkees = 0;
 var runnerScore = 0;
 var taggerScore = 0;
 io.on('connection', function (socket) {
   console.log('a user connected: ', socket.id);
 
   // Generate owl data and send to client
-  if (owlets > pinkies) {
+  if (monkees === 0) {
+    players[socket.id] = {
+      x: 400,
+      y: 400,
+      char: 'monkee',
+      isChaser: true,
+      playerId: socket.id
+    }
+    monkees++;
+  } else if (owlets > pinkies) {
     players[socket.id] = {
       x: 700,
       y: 300,
       char: 'pinkie',
-      isChaser: true,
+      isChaser: false,
       playerId: socket.id
     }
     pinkies++;
@@ -77,8 +87,10 @@ io.on('connection', function (socket) {
     console.log('user disconnected: ', socket.id);
     if (players[socket.id].char == "pinkie") 
       pinkies--;
-    else
+    else if(players[socket.id].char == "owlet")
       owlets--;
+    else 
+      monkees--;
     delete players[socket.id];
     // emit a message to all players to remove this player
     io.emit('disconnectedPlayer', socket.id);

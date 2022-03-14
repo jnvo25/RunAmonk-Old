@@ -23,6 +23,10 @@ export class HomeStage extends Phaser.Scene {
         this.load.spritesheet('pinkie-run', 'assets/Pink_Monster/Pink_Monster_Run_6.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('pinkie-jump', 'assets/Pink_Monster/Pink_Monster_Jump_8.png', { frameWidth: 32, frameHeight: 32 });
 
+        // Load  Monkee assets
+        this.load.spritesheet('monkee-idle', 'assets/Monkee_Monster/Monkee_Monster_Idle_18.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('monkee-run', 'assets/Monkee_Monster/Monkee_Monster_Run_8.png', { frameWidth: 32, frameHeight: 32 });
+
         // Load stage assets
         this.load.image('background', 'assets/maps/images/background.png');
         this.load.image('spike', 'assets/maps/images/spike.png');
@@ -50,6 +54,9 @@ export class HomeStage extends Phaser.Scene {
         this.createAnimation('pinkie-run', 6, true);
         this.createAnimation('pinkie-jump', 8, true);
         this.createAnimation('pinkie-death', 8, false);
+
+        this.createAnimation('monkee-idle', 18, true);
+        this.createAnimation('monkee-run', 8, true);
         
         // Initialize cursors to take in user input in update()
         cursors = this.input.keyboard.createCursorKeys();
