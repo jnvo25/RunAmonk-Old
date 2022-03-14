@@ -4,6 +4,7 @@ var playerGenerated;
 var otherPlayers;
 var chasers;
 var runners;
+var lastUpdated;
 
 export class HomeStage extends Phaser.Scene {
     constructor() {
@@ -123,6 +124,17 @@ export class HomeStage extends Phaser.Scene {
             });
         });
 
+        // Condition: Consistently triggers every 1 second of player no movement
+        // Parameter: Player's x,y position
+        // Handling: Search for player and update
+        this.socket.on('updatePosition', function (playerInfo) {
+            otherPlayers.forEach(function (otherPlayer) {
+                if(otherPlayer.playerId === playerInfo.playerId) {
+                    otherPlayer.setPosition(playerInfo.x, playerInfo.y);
+                }
+            });
+        });
+
         // Condition: Notification a new player joined
         // Parameter: Player's positional and visual data
         // Handling: Add player to client's list
@@ -142,6 +154,8 @@ export class HomeStage extends Phaser.Scene {
                 }
             });
         })
+
+        lastUpdated = Date.now();
     }
 
     update() {
@@ -173,6 +187,15 @@ export class HomeStage extends Phaser.Scene {
 
             if(player.oldPosition && (player.body.velocity.x !== player.oldPosition.velX || player.body.velocity.y !== player.oldPosition.velY)) {
                 this.socket.emit('playerMovement', position);
+                lastUpdated = Date.now();
+            } else {
+                if(Date.now()-lastUpdated > 1000) {
+                    lastUpdated = Date.now();
+                    this.socket.emit('positionUpdate', {
+                        x: player.x,
+                        y: player.y
+                    });
+                }
             }
 
             // save old position

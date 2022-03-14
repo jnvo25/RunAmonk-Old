@@ -56,23 +56,32 @@ io.on('connection', function (socket) {
 
   // when a player moves, update the player data
   socket.on('playerMovement', function (movementData) {
-    movedPlayer = players[socket.id];
-    movedPlayer.x = movementData.x;
-    movedPlayer.y = movementData.y;
-    movedPlayer.velX = movementData.velX;
-    movedPlayer.velY = movementData.velY;
-    movedPlayer.flip = movementData.flip;
-    movedPlayer.anim = movementData.anim;
+    players[socket.id].x = movementData.x;
+    players[socket.id].y = movementData.y;
+    players[socket.id].velX = movementData.velX;
+    players[socket.id].velY = movementData.velY;
+    players[socket.id].flip = movementData.flip;
+    players[socket.id].anim = movementData.anim;
 
     // emit a message to all players about the player that moved
     socket.broadcast.emit('playerMoved', {
       playerId: socket.id,
-      velX: movedPlayer.velX,
-      velY: movedPlayer.velY,
-      flip: movedPlayer.flip,
-      anim: movedPlayer.anim
+      velX: players[socket.id].velX,
+      velY: players[socket.id].velY,
+      flip: players[socket.id].flip,
+      anim: players[socket.id].anim
     });
   });
+
+  socket.on('positionUpdate', (movementData) => {
+    players[socket.id].x = movementData.x;
+    players[socket.id].y = movementData.y;
+    socket.broadcast.emit('updatePosition', {
+      playerId: socket.id,
+      x: movementData.x,
+      y: movementData.y
+    });
+  })
 
   socket.on('tag', (playerId) => {
     taggerScore += 5;
