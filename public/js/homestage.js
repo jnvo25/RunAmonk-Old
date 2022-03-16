@@ -6,6 +6,7 @@ var chasers;
 var runners;
 var lastUpdated;
 let spacebar;
+var ladder;
 
 export class HomeStage extends Phaser.Scene {
     constructor() {
@@ -31,6 +32,7 @@ export class HomeStage extends Phaser.Scene {
 
         // Load stage assets
         this.load.image('background', 'assets/maps/images/background.png');
+        this.load.image('ladder', '/assets/maps/tilesets/ladder.png');
         this.load.image('spike', 'assets/maps/images/spike.png');
         this.load.image('tiles', 'assets/maps/tilesets/terrain_tilesheet.png');
         this.load.tilemapTiledJSON('map', 'assets/maps/tilemaps/homestage.json');
@@ -45,6 +47,10 @@ export class HomeStage extends Phaser.Scene {
         const tileset = map.addTilesetImage('terrain_tilesheet', 'tiles');
         const platforms = map.createStaticLayer('Platforms', tileset, 0, 0);
         platforms.setCollisionByExclusion(-1, true);
+
+        // Add ladder
+        ladder = this.add.image(400, 370,  'ladder');
+        ladder.setScale(1,1.25);
 
         // Create animations
         this.createAnimation('owlet-idle', 4, true);
@@ -163,12 +169,15 @@ export class HomeStage extends Phaser.Scene {
 
     update() {
         if(playerGenerated && !player.tagged) {
+            if (cursors.up.isDown || spacebar.isDown) {
+                if (checkOverlap(ladder, player)) {
+                    player.setVelocityY(-100);
+                } else if(player.body.onFloor()) {
+                    player.setVelocityY(-400);
+                }
+            }
             
-            if (cursors.up.isDown && player.body.onFloor()) {
-                player.setVelocityY(-400);
-            } else if (spacebar.isDown && player.body.onFloor()) {
-                player.setVelocityY(-400);
-            } else if (cursors.left.isDown) {
+            if (cursors.left.isDown) {
                 player.setVelocityX(-160);
                 player.setFlipX(true);
                 player.anims.play(player.char + '-run', true);
@@ -248,6 +257,12 @@ export class HomeStage extends Phaser.Scene {
         }
         return temp;
     }
+}
+
+function checkOverlap(spriteA, spriteB) {
+    var boundsA = spriteA.getBounds();
+    var boundsB = spriteB.getBounds();
+    return Phaser.Geom.Intersects.RectangleToRectangle(boundsA, boundsB);
 }
 
 function displayText(scene, textInput, duration, callback) {
