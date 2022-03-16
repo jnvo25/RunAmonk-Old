@@ -90,9 +90,11 @@ export class HomeStage extends Phaser.Scene {
         this.socket.on('currentPlayers', (players) => {    
             Object.keys(players).forEach((id) => {
                 if(players[id].playerId == self.socket.id) {
-                    player = self.createPlayer(self, players[id]);
-                    self.physics.add.collider(player, platforms);
-                    playerGenerated = true;
+                    if(!players[id].tagged) {
+                        player = self.createPlayer(self, players[id]);
+                        self.physics.add.collider(player, platforms);
+                        playerGenerated = true;
+                    }
                 } else {
                     var otherPlayer = self.createPlayer(self, players[id]);
                     self.physics.add.collider(otherPlayer, platforms);
@@ -107,12 +109,12 @@ export class HomeStage extends Phaser.Scene {
         this.socket.on('taggedPlayer', (tagData) => {
             if(player.playerId === tagData.playerId) {
                 player.tagged = true;
-                player.anims.play('owlet-death');
+                player.anims.play(player.char + '-death');
             }
              else {
                 otherPlayers.forEach(function (otherPlayer) {
                     if(otherPlayer.playerId === tagData.playerId) {
-                        otherPlayer.anims.play('owlet-death');
+                        otherPlayer.anims.play(otherPlayer.char + '-death');
                     } 
                 });
             }
