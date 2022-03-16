@@ -25,7 +25,7 @@ io.on('connection', function (socket) {
       y: 400,
       char: 'monkee',
       isChaser: true,
-      tagged: false,
+      isTagged: false,
       playerId: socket.id
     }
     monkees++;
@@ -35,7 +35,7 @@ io.on('connection', function (socket) {
       y: 300,
       char: 'pinkie',
       isChaser: false,
-      tagged: false,
+      isTagged: false,
       playerId: socket.id
     }
     pinkies++;
@@ -45,7 +45,7 @@ io.on('connection', function (socket) {
       y: 300,
       char: 'owlet',
       isChaser: false,
-      tagged: false,
+      isTagged: false,
       playerId: socket.id
     }
     owlets++;
@@ -88,6 +88,7 @@ io.on('connection', function (socket) {
 
   socket.on('tag', (playerId) => {
     taggerScore += 5;
+    players[playerId].isTagged = true;
     io.emit('taggedPlayer', {
       playerId: playerId,
       taggerScore: taggerScore

@@ -25,6 +25,7 @@ export class HomeStage extends Phaser.Scene {
         this.load.spritesheet('pinkie-idle', 'assets/Pink_Monster/Pink_Monster_Idle_4.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('pinkie-run', 'assets/Pink_Monster/Pink_Monster_Run_6.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('pinkie-jump', 'assets/Pink_Monster/Pink_Monster_Jump_8.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('pinkie-death', 'assets/Pink_Monster/Pink_Monster_Death_8.png', { frameWidth: 32, frameHeight: 32 });
 
         // Load  Monkee assets
         this.load.spritesheet('monkee-idle', 'assets/Monkee_Monster/Monkee_Monster_Idle_18.png', { frameWidth: 32, frameHeight: 32 });
@@ -90,15 +91,15 @@ export class HomeStage extends Phaser.Scene {
         this.socket.on('currentPlayers', (players) => {    
             Object.keys(players).forEach((id) => {
                 if(players[id].playerId == self.socket.id) {
-                    if(!players[id].tagged) {
-                        player = self.createPlayer(self, players[id]);
-                        self.physics.add.collider(player, platforms);
-                        playerGenerated = true;
-                    }
+                    player = self.createPlayer(self, players[id]);
+                    self.physics.add.collider(player, platforms);
+                    playerGenerated = true;
                 } else {
-                    var otherPlayer = self.createPlayer(self, players[id]);
-                    self.physics.add.collider(otherPlayer, platforms);
-                    otherPlayers.add(otherPlayer);
+                    if(!players[id].isTagged) {
+                        var otherPlayer = self.createPlayer(self, players[id]);
+                        self.physics.add.collider(otherPlayer, platforms);
+                        otherPlayers.add(otherPlayer);
+                    }
                 }
             });
         })
@@ -108,7 +109,7 @@ export class HomeStage extends Phaser.Scene {
         // Handling: Check if its current player and play death animation accordingly
         this.socket.on('taggedPlayer', (tagData) => {
             if(player.playerId === tagData.playerId) {
-                player.tagged = true;
+                player.isTagged = true;
                 player.anims.play(player.char + '-death');
             }
              else {
@@ -170,7 +171,7 @@ export class HomeStage extends Phaser.Scene {
     }
 
     update() {
-        if(playerGenerated && !player.tagged) {
+        if(playerGenerated && !player.isTagged) {
             if (cursors.up.isDown || spacebar.isDown) {
                 if (checkOverlap(ladder, player)) {
                     player.setVelocityY(-100);
@@ -224,7 +225,7 @@ export class HomeStage extends Phaser.Scene {
         if(!taggedPlayer.isTagged) {
             this.socket.emit('tag', taggedPlayer.playerId);
             taggedPlayer.isTagged = true;
-            taggedPlayer.anims.play('owlet-death');
+            taggedPlayer.anims.play(taggedPlayer.char + '-death');
             taggedPlayer.setVelocity(0, 0);
         }
     }
