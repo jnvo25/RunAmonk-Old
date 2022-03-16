@@ -172,14 +172,27 @@ export class HomeStage extends Phaser.Scene {
 
     update() {
         if(playerGenerated && !player.isTagged) {
+            // Player's current position
+            const position = { 
+                x: player.x,
+                y: player.y,
+                velX: player.body.velocity.x,
+                velY: player.body.velocity.y,
+                flip: player.flipX,
+                anim: player.anims.getCurrentKey()
+            }
+
+            // Allow climbing or jumping
             if (cursors.up.isDown || spacebar.isDown) {
                 if (checkOverlap(ladder, player)) {
                     player.setVelocityY(-100);
+                    this.socket.emit('playerMovement', position);   // Climbing is weird and cannot be displayed with vector only
                 } else if(player.body.onFloor()) {
                     player.setVelocityY(-400);
                 }
             }
             
+            // Allow movement right left and idle
             if (cursors.left.isDown) {
                 player.setVelocityX(-160);
                 player.setFlipX(true);
@@ -193,19 +206,12 @@ export class HomeStage extends Phaser.Scene {
                 player.anims.play(player.char + '-idle', true);
             }
             
-            const position = { 
-                x: player.x,
-                y: player.y,
-                velX: player.body.velocity.x,
-                velY: player.body.velocity.y,
-                flip: player.flipX,
-                anim: player.anims.getCurrentKey()
-            }
-
+            
+            // If player position has updated, emit to other clients
             if(player.oldPosition && (player.body.velocity.x !== player.oldPosition.velX || player.body.velocity.y !== player.oldPosition.velY)) {
                 this.socket.emit('playerMovement', position);
             } else {
-                if(Date.now()-lastUpdated > 1000) {
+                if(Date.now()-lastUpdated > 500) {
                     lastUpdated = Date.now();
                     this.socket.emit('positionUpdate', {
                         x: player.x,
