@@ -1,3 +1,4 @@
+import { Button } from "./button.js";
 var player;
 var cursors;
 var playerGenerated;
@@ -10,6 +11,13 @@ var ladder;
 var gameTime;
 var gameover;
 var allTagTimer;
+var replay;
+var exit;
+var waiting;
+var totalPlayers;
+var playersReady;
+var screenCenterX;
+var screenCenterY;
 
 export class HomeStage extends Phaser.Scene {
     constructor() {
@@ -57,18 +65,27 @@ export class HomeStage extends Phaser.Scene {
         ladder.setScale(1,1.25);
 
         // Create animations
-        this.createAnimation('owlet-idle', 4, true);
-        this.createAnimation('owlet-run', 6, true);
-        this.createAnimation('owlet-jump', 8, true);
-        this.createAnimation('owlet-death', 8, false);
+        this.createAnimation('owlet-idle', 3, true);
+        this.createAnimation('owlet-run', 5, true);
+        this.createAnimation('owlet-jump', 7, true);
+        this.createAnimation('owlet-death', 7, false);
 
-        this.createAnimation('pinkie-idle', 4, true);
-        this.createAnimation('pinkie-run', 6, true);
-        this.createAnimation('pinkie-jump', 8, true);
-        this.createAnimation('pinkie-death', 8, false);
+        this.createAnimation('pinkie-idle', 3, true);
+        this.createAnimation('pinkie-run', 5, true);
+        this.createAnimation('pinkie-jump', 7, true);
+        this.createAnimation('pinkie-death', 7, false);
 
-        this.createAnimation('monkee-idle', 18, true);
-        this.createAnimation('monkee-run', 8, true);
+        this.createAnimation('monkee-idle', 17, true);
+        this.createAnimation('monkee-run', 7, true);
+
+        // Initialize helpers
+        spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        lastUpdated = Date.now();
+        allTagTimer = Date.now();
+        gameover = false;
+        waiting = false;
+        screenCenterX = this.cameras.main.worldView.x + this.cameras.main.width / 2;
+        screenCenterY = this.cameras.main.worldView.y + this.cameras.main.height / 2;
         
         // Initialize cursors to take in user input in update()
         cursors = this.input.keyboard.createCursorKeys();
@@ -181,17 +198,31 @@ export class HomeStage extends Phaser.Scene {
         var text = this.add.text(738,35, gameTime, {color: "black"});
         countdown(this, text);
 
-        // Initialize helpers
-        spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        lastUpdated = Date.now();
-        allTagTimer = Date.now();
-        gameover = false;
+        // Display button
+        
+        replay = new Button(screenCenterX, screenCenterY+-20, 'Replay', this, () => {
+            waiting = true;
+        });
+        exit = new Button(screenCenterX, screenCenterY+50, 'Exit', this, () => console.log('game is started'));
+        totalPlayers = 3;
+        playersReady = 2;
     }
 
     update() {
-        if(gameover) {
+        if(waiting) {
+            replay.remove();
+            displayText(this, "Waiting for players to ready", 1000, ()=>{})
+            for(var i=0; i<totalPlayers; i++) {
+                console.log((totalPlayers-1*50/2));
+                if(i < playersReady) {
+                    this.add.circle((screenCenterX-((totalPlayers-1)*50)/2)+i*50, screenCenterY-20, 15, 0x00bf19);
+                } else {
+                    this.add.circle((screenCenterX-((totalPlayers-1)*50)/2)+i*50, screenCenterY-20, 15, 0x575757);
+                }
+            }
+        } else if(gameover) {
             displayText(this, "Game Over", 1000, ()=>{})
-        } if(playerGenerated) {
+        } else if(playerGenerated) {
             if(Date.now()-allTagTimer > 500) {
                 allTagTimer = Date.now();
                 this.socket.emit('checkAllTagged');
@@ -204,7 +235,7 @@ export class HomeStage extends Phaser.Scene {
                     velX: player.body.velocity.x,
                     velY: player.body.velocity.y,
                     flip: player.flipX,
-                    anim: player.anims.getCurrentKey()
+                    anim: player.anims.getName()
                 }
 
                 // Allow climbing or jumping
@@ -305,7 +336,7 @@ function checkOverlap(spriteA, spriteB) {
 function displayText(scene, textInput, duration, callback) {
     const screenCenterX = scene.cameras.main.worldView.x + scene.cameras.main.width / 2;
     const screenCenterY = scene.cameras.main.worldView.y + scene.cameras.main.height / 2;
-    var text = scene.add.text(screenCenterX, screenCenterY, textInput, {backgroundColor: "#ffo"}).setOrigin(0.5);
+    var text = scene.add.text(screenCenterX, screenCenterY-100, textInput, {backgroundColor: "#ffo", fontSize: "40px"}).setOrigin(0.5);
     scene.time.addEvent({
         delay: duration,
         callback: () => {
