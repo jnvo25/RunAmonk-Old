@@ -8,6 +8,8 @@ var lastUpdated;
 let spacebar;
 var ladder;
 var gameTime;
+var gameover;
+var allTagTimer;
 
 export class HomeStage extends Phaser.Scene {
     constructor() {
@@ -93,6 +95,7 @@ export class HomeStage extends Phaser.Scene {
             Object.keys(players).forEach((id) => {
                 if(players[id].playerId == self.socket.id) {
                     player = self.createPlayer(self, players[id]);
+                    player.isChaser = players[id].isChaser;
                     self.physics.add.collider(player, platforms);
                     playerGenerated = true;
                 } else {
@@ -166,67 +169,85 @@ export class HomeStage extends Phaser.Scene {
             });
         })
 
+        // Condition: Client notified all players are tagged
+        // Parameter: None
+        // Handling: End game and ask to replay
+        this.socket.on('playersAllTagged', () =>{
+            gameover = true;
+        })
+
         // Display text countdown
         gameTime = 120;
         var text = this.add.text(738,35, gameTime, {color: "black"});
         countdown(this, text);
+
         // Initialize helpers
         spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         lastUpdated = Date.now();
+        allTagTimer = Date.now();
+        gameover = false;
     }
 
     update() {
-        if(playerGenerated && !player.isTagged) {
-            // Player's current position
-            const position = { 
-                x: player.x,
-                y: player.y,
-                velX: player.body.velocity.x,
-                velY: player.body.velocity.y,
-                flip: player.flipX,
-                anim: player.anims.getCurrentKey()
+        if(gameover) {
+            displayText(this, "Game Over", 1000, ()=>{})
+        } if(playerGenerated) {
+            if(Date.now()-allTagTimer > 500) {
+                allTagTimer = Date.now();
+                this.socket.emit('checkAllTagged');
             }
-
-            // Allow climbing or jumping
-            if (cursors.up.isDown || spacebar.isDown) {
-                if (checkOverlap(ladder, player)) {
-                    player.setVelocityY(-100);
-                    this.socket.emit('playerMovement', position);   // Climbing is weird and cannot be displayed with vector only
-                } else if(player.body.onFloor()) {
-                    player.setVelocityY(-400);
+            if(!player.isTagged) {
+                // Player's current position
+                const position = { 
+                    x: player.x,
+                    y: player.y,
+                    velX: player.body.velocity.x,
+                    velY: player.body.velocity.y,
+                    flip: player.flipX,
+                    anim: player.anims.getCurrentKey()
                 }
-            }
-            
-            // Allow movement right left and idle
-            if (cursors.left.isDown) {
-                player.setVelocityX(-160);
-                player.setFlipX(true);
-                player.anims.play(player.char + '-run', true);
-            } else if (cursors.right.isDown) {
-                player.setVelocityX(160);
-                player.setFlipX(false);
-                player.anims.play(player.char + '-run', true);
-            } else {
-                player.setVelocityX(0);
-                player.anims.play(player.char + '-idle', true);
-            }
-            
-            
-            // If player position has updated, emit to other clients
-            if(player.oldPosition && (player.body.velocity.x !== player.oldPosition.velX || player.body.velocity.y !== player.oldPosition.velY)) {
-                this.socket.emit('playerMovement', position);
-            } else {
-                if(Date.now()-lastUpdated > 500) {
-                    lastUpdated = Date.now();
-                    this.socket.emit('positionUpdate', {
-                        x: player.x,
-                        y: player.y
-                    });
-                }
-            }
 
-            // save old position
-            player.oldPosition = position;
+                // Allow climbing or jumping
+                if (cursors.up.isDown || spacebar.isDown) {
+                    if (checkOverlap(ladder, player)) {
+                        player.setVelocityY(-100);
+                        this.socket.emit('playerMovement', position);   // Climbing is weird and cannot be displayed with vector only
+                    } else if(player.body.onFloor()) {
+                        player.setVelocityY(-400);
+                    }
+                }
+                
+                // Allow movement right left and idle
+                if (cursors.left.isDown) {
+                    player.setVelocityX(-160);
+                    player.setFlipX(true);
+                    player.anims.play(player.char + '-run', true);
+                } else if (cursors.right.isDown) {
+                    player.setVelocityX(160);
+                    player.setFlipX(false);
+                    player.anims.play(player.char + '-run', true);
+                } else {
+                    player.setVelocityX(0);
+                    player.anims.play(player.char + '-idle', true);
+                }
+                
+                
+                // If player position has updated, emit to other clients
+                if(player.oldPosition && (player.body.velocity.x !== player.oldPosition.velX || player.body.velocity.y !== player.oldPosition.velY)) {
+                    this.socket.emit('playerMovement', position);
+                } else {
+                    if(Date.now()-lastUpdated > 500) {
+                        lastUpdated = Date.now();
+                        this.socket.emit('positionUpdate', {
+                            x: player.x,
+                            y: player.y
+                        });
+                    }
+                }
+
+                // save old position
+                player.oldPosition = position;
+            }
         }
     }
 
@@ -270,7 +291,9 @@ export class HomeStage extends Phaser.Scene {
             runners.add(temp);
         }
         return temp;
-    }
+    } 
+
+    
 }
 
 function checkOverlap(spriteA, spriteB) {
@@ -298,7 +321,7 @@ function countdown(scene, text) {
         callback: () => {
             gameTime--;
             text.setText(gameTime);
-            if(gameTime > 0)
+            if(gameTime > 0 && !gameover)
                 countdown(scene, text);
         }
     })
