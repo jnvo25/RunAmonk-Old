@@ -110,7 +110,6 @@ io.on('connection', function (socket) {
   });
 
   socket.on('checkAllTagged', function () {
-    console.log("CHECKING")
     var untaggedPlayerExists = false;
     for(const [key, value] of Object.entries(players)) {
       if(!value.isChaser && !value.isTagged) {
