@@ -7,6 +7,7 @@ var runners;
 var lastUpdated;
 let spacebar;
 var ladder;
+var gameTime;
 
 export class HomeStage extends Phaser.Scene {
     constructor() {
@@ -165,6 +166,10 @@ export class HomeStage extends Phaser.Scene {
             });
         })
 
+        // Display text countdown
+        gameTime = 120;
+        var text = this.add.text(738,35, gameTime, {color: "black"});
+        countdown(this, text);
         // Initialize helpers
         spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         lastUpdated = Date.now();
@@ -283,6 +288,18 @@ function displayText(scene, textInput, duration, callback) {
         callback: () => {
             text.destroy();
             callback();
+        }
+    })
+}
+
+function countdown(scene, text) {
+    scene.time.addEvent({
+        delay: 1000,
+        callback: () => {
+            gameTime--;
+            text.setText(gameTime);
+            if(gameTime > 0)
+                countdown(scene, text);
         }
     })
 }
