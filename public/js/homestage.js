@@ -18,6 +18,7 @@ var totalPlayers;
 var playersReady;
 var screenCenterX;
 var screenCenterY;
+var waitingStatus;
 
 export class HomeStage extends Phaser.Scene {
     constructor() {
@@ -86,6 +87,7 @@ export class HomeStage extends Phaser.Scene {
         waiting = false;
         screenCenterX = this.cameras.main.worldView.x + this.cameras.main.width / 2;
         screenCenterY = this.cameras.main.worldView.y + this.cameras.main.height / 2;
+        waitingStatus = new Set();
         
         // Initialize cursors to take in user input in update()
         cursors = this.input.keyboard.createCursorKeys();
@@ -109,7 +111,9 @@ export class HomeStage extends Phaser.Scene {
         // Parameter: List of players with positional data
         // Handling: For each existing player, places character on screen based on data
         this.socket.on('currentPlayers', (players) => {    
+            totalPlayers = 0;
             Object.keys(players).forEach((id) => {
+                totalPlayers++;
                 if(players[id].playerId == self.socket.id) {
                     player = self.createPlayer(self, players[id]);
                     player.isChaser = players[id].isChaser;
@@ -153,6 +157,9 @@ export class HomeStage extends Phaser.Scene {
                     otherPlayer.anims.play(playerInfo.anim, true);
                 }
             });
+            waitingStatus.forEach(function (circle) {
+                circle.destroy();
+            })
         });
 
         // Condition: Consistently triggers every 1 second of player no movement
@@ -173,6 +180,7 @@ export class HomeStage extends Phaser.Scene {
             var otherPlayer = self.createPlayer(self, playerInfo);
             self.physics.add.collider(otherPlayer, platforms);
             otherPlayers.add(otherPlayer);
+            totalPlayers++;
         });
 
         // Condition: Notification a player disconnected
@@ -182,8 +190,13 @@ export class HomeStage extends Phaser.Scene {
             otherPlayers.forEach(function (otherPlayer) {
                 if(otherPlayer.playerId === playerId) {
                     otherPlayer.destroy();
+                    totalPlayers--;
+                    playersReady--;
                 }
             });
+            waitingStatus.forEach(function (circle) {
+                circle.destroy();
+            })
         })
 
         // Condition: Client notified all players are tagged
@@ -191,6 +204,23 @@ export class HomeStage extends Phaser.Scene {
         // Handling: End game and ask to replay
         this.socket.on('playersAllTagged', () =>{
             gameover = true;
+        })
+
+        // Condition: Client sends when player is ready but there are other players not ready
+        // Parameter: Number players not ready
+        // Handling: Display correct colored circles
+        this.socket.on('waitingUpdate', (playersNotReady) =>{
+            gameover = true;
+            playersReady = totalPlayers-playersNotReady;
+            console.log("PLAYERS NOT READY: ", playersNotReady);
+        })
+
+        // Condition: Client sends when all players are ready
+        // Parameter: None
+        // Handling: 
+        this.socket.on('startGame', (playersNotReady) =>{
+            
+            console.log("All players are ready");
         })
 
         // Display text countdown
@@ -202,22 +232,23 @@ export class HomeStage extends Phaser.Scene {
         
         replay = new Button(screenCenterX, screenCenterY+-20, 'Replay', this, () => {
             waiting = true;
+            console.log("ASDFASDF");
+            this.socket.emit('playerReady');
         });
         exit = new Button(screenCenterX, screenCenterY+50, 'Exit', this, () => console.log('game is started'));
-        totalPlayers = 3;
-        playersReady = 2;
     }
 
     update() {
         if(waiting) {
+            // console.log("TOTAL PLAYERS: ", totalPlayers);
+            // console.log("PLAYERS READY: ", playersReady);
             replay.remove();
             displayText(this, "Waiting for players to ready", 1000, ()=>{})
             for(var i=0; i<totalPlayers; i++) {
-                console.log((totalPlayers-1*50/2));
                 if(i < playersReady) {
-                    this.add.circle((screenCenterX-((totalPlayers-1)*50)/2)+i*50, screenCenterY-20, 15, 0x00bf19);
+                    waitingStatus.add(this.add.circle((screenCenterX-((totalPlayers-1)*50)/2)+i*50, screenCenterY-20, 15, 0x00bf19));
                 } else {
-                    this.add.circle((screenCenterX-((totalPlayers-1)*50)/2)+i*50, screenCenterY-20, 15, 0x575757);
+                    waitingStatus.add(this.add.circle((screenCenterX-((totalPlayers-1)*50)/2)+i*50, screenCenterY-20, 15, 0x575757));
                 }
             }
         } else if(gameover) {

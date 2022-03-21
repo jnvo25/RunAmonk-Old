@@ -26,7 +26,8 @@ io.on('connection', function (socket) {
       char: 'monkee',
       isChaser: true,
       isTagged: false,
-      playerId: socket.id
+      playerId: socket.id,
+      ready: false
     }
     monkees++;
   } else if (owlets > pinkies) {
@@ -36,7 +37,8 @@ io.on('connection', function (socket) {
       char: 'pinkie',
       isChaser: false,
       isTagged: false,
-      playerId: socket.id
+      playerId: socket.id,
+      ready: false
     }
     pinkies++;
   } else {
@@ -46,7 +48,8 @@ io.on('connection', function (socket) {
       char: 'owlet',
       isChaser: false,
       isTagged: false,
-      playerId: socket.id
+      playerId: socket.id,
+      ready: false
     }
     owlets++;
   }
@@ -109,6 +112,7 @@ io.on('connection', function (socket) {
     io.emit('disconnectedPlayer', socket.id);
   });
 
+  // Cycle through all players to check if everyone is tagged
   socket.on('checkAllTagged', function () {
     var untaggedPlayerExists = false;
     for(const [key, value] of Object.entries(players)) {
@@ -120,6 +124,23 @@ io.on('connection', function (socket) {
       io.emit('playersAllTagged');
     }
   })
+
+  // Set current player as ready and send start game if all players are ready
+  socket.on('playerReady', function () {
+    players[socket.id].ready = true;
+    var playersNotReadyCount = 0;
+    for(const [key, value] of Object.entries(players)) {
+      if(!value.ready) {
+        playersNotReadyCount++;    
+      }
+    }
+    if(playersNotReadyCount == 0) {
+      io.emit('waitingUpdate', playersNotReadyCount);
+      io.emit('startGame');
+    } else {
+      io.emit('waitingUpdate', playersNotReadyCount);
+    }
+  });
 
 });
 
