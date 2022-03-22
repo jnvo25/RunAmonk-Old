@@ -15,50 +15,29 @@ var pinkies = 0;
 var monkees = 0;
 var runnerScore = 0;
 var taggerScore = 0;
+var gamestatus = "waiting";
 io.on('connection', function (socket) {
   console.log('a user connected: ', socket.id);
 
-  // Generate owl data and send to client
-  if (monkees === 0) {
-    players[socket.id] = {
-      x: 400,
-      y: 400,
-      char: 'monkee',
-      isChaser: true,
-      isTagged: false,
-      playerId: socket.id,
-      ready: false
-    }
-    monkees++;
-  } else if (owlets > pinkies) {
-    players[socket.id] = {
-      x: 700,
-      y: 300,
-      char: 'pinkie',
-      isChaser: false,
-      isTagged: false,
-      playerId: socket.id,
-      ready: false
-    }
-    pinkies++;
-  } else {
-    players[socket.id] = {
-      x: 100,
-      y: 300,
-      char: 'owlet',
-      isChaser: false,
-      isTagged: false,
-      playerId: socket.id,
-      ready: false
-    }
-    owlets++;
-  }
+  
 
-  // Give current player list of active players
-  socket.emit('currentPlayers', players);
+  players[socket.id] = {playerId: socket.id}
+
+  
+  // Give player number of players and how many players ready
+  totalPlayers = Object.keys(players).length;
+  var readyPlayers = 0;
+  for(const [key, value] of Object.entries(players)) {
+    if (value.ready) readyPlayers++;
+  }
+  socket.emit('currentPlayers', {
+    gamestatus: gamestatus,
+    totalPlayers: totalPlayers,
+    readyPlayers: readyPlayers
+  });
 
   // Let everyone know new player has arrived
-  socket.broadcast.emit('newPlayer', players[socket.id]);
+  socket.broadcast.emit('newPlayer', totalPlayers);
 
   // when a player moves, update the player data
   socket.on('playerMovement', function (movementData) {
@@ -101,15 +80,17 @@ io.on('connection', function (socket) {
   // when a player disconnects, remove them from our players object
   socket.on('disconnect', function () {
     console.log('user disconnected: ', socket.id);
-    if (players[socket.id].char == "pinkie") 
-      pinkies--;
-    else if(players[socket.id].char == "owlet")
-      owlets--;
-    else 
-      monkees--;
+    // if (players[socket.id].char == "pinkie") 
+    //   pinkies--;
+    // else if(players[socket.id].char == "owlet")
+    //   owlets--;
+    // else if()
+    //   monkees--;
     delete players[socket.id];
+    totalPlayers = Object.keys(players).length;
+    
     // emit a message to all players to remove this player
-    io.emit('disconnectedPlayer', socket.id);
+    io.emit('disconnectedPlayer', totalPlayers);
   });
 
   // Cycle through all players to check if everyone is tagged
@@ -121,7 +102,7 @@ io.on('connection', function (socket) {
       }
     }
     if(!untaggedPlayerExists) {
-      io.emit('playersAllTagged');
+      gameover();
     }
   })
 
@@ -134,9 +115,9 @@ io.on('connection', function (socket) {
         playersNotReadyCount++;    
       }
     }
+    console.log(playersNotReadyCount);
     if(playersNotReadyCount == 0) {
-      io.emit('waitingUpdate', playersNotReadyCount);
-      io.emit('startGame');
+      io.emit('allReady', generatePlayers());
     } else {
       io.emit('waitingUpdate', playersNotReadyCount);
     }
@@ -147,3 +128,53 @@ io.on('connection', function (socket) {
 server.listen(8081, function () {
     console.log(`Listening on ${server.address().port}`);
 });
+
+function gameover() {
+  readyPlayers = 0;
+  for(key of Object.keys(players)) {
+    players[key].ready = false;
+  }
+  console.log(players);
+  io.emit('playersAllTagged');
+}
+
+function generatePlayers() {
+  owlets = 0;
+  pinkies = 0;
+  monkees = 0;
+  for(key of Object.keys(players)) {
+    // Generate owl data and send to client
+    if (monkees === 0) {
+      players[key] = {
+        ...players[key],
+        x: 400,
+        y: 400,
+        char: 'monkee',
+        isChaser: true,
+      }
+      monkees++;
+    } else if (owlets > pinkies) {
+      players[key] = {
+        ...players[key],
+        x: 700,
+        y: 300,
+        char: 'pinkie',
+        isChaser: false,
+      }
+      pinkies++;
+    } else {
+      players[key] = {
+        ...players[key],
+        x: 100,
+        y: 300,
+        char: 'owlet',
+        isChaser: false,
+      }
+      owlets++;
+    }
+    
+    players[key].isTagged = false;
+  }
+  gamestatus = "playing";
+  return players;
+}
