@@ -85,8 +85,12 @@ io.on('connection', function (socket) {
       }
     }
     if(!untaggedPlayerExists) {
-      gameover();
+      gameover("Taggers");
     }
+  })
+
+  socket.on('countExpired', () => {
+    gameover("Runners");
   })
 
   // Set current player as ready and send start game if all players are ready
@@ -117,12 +121,12 @@ function countPlayers() {
   return {totalPlayers: playersLength, readyPlayers: playersLength - playersNotReadyCount};
 }
 
-function gameover() {
+function gameover(winCondition) {
   readyPlayers = 0;
   for(key of Object.keys(players)) {
     players[key].ready = false;
   }
-  io.emit('playersAllTagged');
+  io.emit('playersAllTagged', winCondition);
 }
 
 function generatePlayers() {

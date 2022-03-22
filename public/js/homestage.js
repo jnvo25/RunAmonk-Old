@@ -16,6 +16,7 @@ var screenCenterY;
 var waitingStatus;
 var gamestatus;
 var screenText;
+var counter;
 
 export class HomeStage extends Phaser.Scene {
     constructor() {
@@ -168,10 +169,11 @@ export class HomeStage extends Phaser.Scene {
         // Condition: Client notified all players are tagged
         // Parameter: None
         // Handling: End game and ask to replay
-        this.socket.on('playersAllTagged', () =>{
+        this.socket.on('playersAllTagged', (winCondition) =>{
             gamestatus = "gameover";
-            this.displayText("Game Over");
+            this.displayText("Game Over: " + winCondition + " win!");
             replay.remove();
+            gameTime = 120;
             replay = new Button(screenCenterX, screenCenterY+50, 'Ready', this, () => {
                 this.socket.emit('playerReady');
                 player.destroy();
@@ -210,12 +212,12 @@ export class HomeStage extends Phaser.Scene {
             console.log("DESTROY WAITING ROOM");
             this.destroyWaitingRoom();
             gamestatus = "playing";
+            this.countdown(self, counter);
         })
 
         // Display text countdown
         gameTime = 120;
-        var text = this.add.text(738,35, gameTime, {color: "black"});
-        countdown(this, text);
+        counter = this.add.text(738,35, gameTime, {color: "black"});
 
         // Display button
         replay = new Button(screenCenterX, screenCenterY+50, 'Ready', this, () => {
@@ -362,6 +364,20 @@ export class HomeStage extends Phaser.Scene {
     removeText() {
         screenText.destroy();
     }
+
+    countdown(scene, text) {
+        scene.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                gameTime--;
+                text.setText(gameTime);
+                if(gameTime > 0 && !gameover)
+                    this.countdown(scene, text);
+                else
+                    this.socket.emit('countExpired');
+            }
+        })
+    }
     
 }
 
@@ -373,14 +389,3 @@ function checkOverlap(spriteA, spriteB) {
 
 
 
-function countdown(scene, text) {
-    scene.time.addEvent({
-        delay: 1000,
-        callback: () => {
-            gameTime--;
-            text.setText(gameTime);
-            if(gameTime > 0 && !gameover)
-                countdown(scene, text);
-        }
-    })
-}
