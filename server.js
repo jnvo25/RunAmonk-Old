@@ -17,12 +17,7 @@ var runnerScore = 0;
 var taggerScore = 0;
 var gamestatus = "waiting";
 io.on('connection', function (socket) {
-  console.log('a user connected: ', socket.id);
-
-  
-
-  players[socket.id] = {playerId: socket.id}
-
+  players[socket.id] = {playerId: socket.id}  
   
   // Give player number of players and how many players ready
   totalPlayers = Object.keys(players).length;
@@ -80,12 +75,7 @@ io.on('connection', function (socket) {
   // when a player disconnects, remove them from our players object
   socket.on('disconnect', function () {
     console.log('user disconnected: ', socket.id);
-    // if (players[socket.id].char == "pinkie") 
-    //   pinkies--;
-    // else if(players[socket.id].char == "owlet")
-    //   owlets--;
-    // else if()
-    //   monkees--;
+
     delete players[socket.id];
     totalPlayers = Object.keys(players).length;
     
@@ -115,7 +105,6 @@ io.on('connection', function (socket) {
         playersNotReadyCount++;    
       }
     }
-    console.log(playersNotReadyCount);
     if(playersNotReadyCount == 0) {
       io.emit('allReady', generatePlayers());
     } else {
@@ -134,7 +123,6 @@ function gameover() {
   for(key of Object.keys(players)) {
     players[key].ready = false;
   }
-  console.log(players);
   io.emit('playersAllTagged');
 }
 
@@ -172,7 +160,7 @@ function generatePlayers() {
       }
       owlets++;
     }
-    
+
     players[key].isTagged = false;
   }
   gamestatus = "playing";
