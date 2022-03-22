@@ -20,19 +20,13 @@ io.on('connection', function (socket) {
   players[socket.id] = {playerId: socket.id}  
   
   // Give player number of players and how many players ready
-  totalPlayers = Object.keys(players).length;
-  var readyPlayers = 0;
-  for(const [key, value] of Object.entries(players)) {
-    if (value.ready) readyPlayers++;
-  }
   socket.emit('currentPlayers', {
     gamestatus: gamestatus,
-    totalPlayers: totalPlayers,
-    readyPlayers: readyPlayers
+    roomInfo: countPlayers()
   });
 
   // Let everyone know new player has arrived
-  socket.broadcast.emit('newPlayer', totalPlayers);
+  socket.broadcast.emit('newPlayer', countPlayers());
 
   // when a player moves, update the player data
   socket.on('playerMovement', function (movementData) {
@@ -77,10 +71,9 @@ io.on('connection', function (socket) {
     console.log('user disconnected: ', socket.id);
 
     delete players[socket.id];
-    totalPlayers = Object.keys(players).length;
     
     // emit a message to all players to remove this player
-    io.emit('disconnectedPlayer', totalPlayers);
+    io.emit('disconnectedPlayer', countPlayers());
   });
 
   // Cycle through all players to check if everyone is tagged
@@ -99,16 +92,11 @@ io.on('connection', function (socket) {
   // Set current player as ready and send start game if all players are ready
   socket.on('playerReady', function () {
     players[socket.id].ready = true;
-    var playersNotReadyCount = 0;
-    for(const [key, value] of Object.entries(players)) {
-      if(!value.ready) {
-        playersNotReadyCount++;    
-      }
-    }
-    if(playersNotReadyCount == 0) {
+    const roomInfo = countPlayers();
+    if(roomInfo.readyPlayers == roomInfo.totalPlayers) {
       io.emit('allReady', generatePlayers());
     } else {
-      io.emit('waitingUpdate', playersNotReadyCount);
+      io.emit('waitingUpdate', roomInfo);
     }
   });
 
@@ -117,6 +105,17 @@ io.on('connection', function (socket) {
 server.listen(8081, function () {
     console.log(`Listening on ${server.address().port}`);
 });
+
+function countPlayers() {
+  var playersNotReadyCount = 0;
+  for(const [key, value] of Object.entries(players)) {
+    if(!value.ready) {
+      playersNotReadyCount++;    
+    }
+  }
+  const playersLength = Object.keys(players).length;
+  return {totalPlayers: playersLength, readyPlayers: playersLength - playersNotReadyCount};
+}
 
 function gameover() {
   readyPlayers = 0;

@@ -1,7 +1,6 @@
 import { Button } from "./button.js";
 var player;
 var cursors;
-var playerGenerated;
 var otherPlayers;
 var chasers;
 var runners;
@@ -12,10 +11,6 @@ var gameTime;
 var gameover;
 var allTagTimer;
 var replay;
-var exit;
-var waiting;
-var totalPlayers;
-var readyPlayers;
 var screenCenterX;
 var screenCenterY;
 var waitingStatus;
@@ -110,9 +105,7 @@ export class HomeStage extends Phaser.Scene {
         // Parameter: Waiting room information (totalPlayers, readyPlayers, gamestatus)
         // Handling: Draw circles on screen according to how many players
         this.socket.on('currentPlayers', (roomInfo) => {    
-            this.displayText("Waiting for players to ready")
-            totalPlayers = roomInfo.totalPlayers;
-            readyPlayers = roomInfo.readyPlayers
+            this.displayText("Waiting for players to ready");
             this.updateWaitingRoom(self);
         })
 
@@ -160,19 +153,16 @@ export class HomeStage extends Phaser.Scene {
         // Condition: Notification a new player joined
         // Parameter: Total number of players
         // Handling: Add player to client's list
-        this.socket.on('newPlayer', function (updatedTotal) {
-            console.log("NEW PLAYER!", totalPlayers);
-            totalPlayers = updatedTotal;
-            self.updateWaitingRoom();
+        this.socket.on('newPlayer', function (roomInfo) {
+            console.log("NEW PLAYER!", roomInfo.totalPlayers);
+            self.updateWaitingRoom(roomInfo.readyPlayers, roomInfo.totalPlayers);
         });
 
         // Condition: Notification a player disconnected
         // Parameter: Total number of players
         // Handling: Total players in game
-        this.socket.on('disconnectedPlayer', (updatedTotal) => {     
-            console.log("DISCONNECTED PLAYER!", totalPlayers);
-            totalPlayers = updatedTotal;
-            self.updateWaitingRoom();
+        this.socket.on('disconnectedPlayer', (roomInfo) => {     
+            self.updateWaitingRoom(roomInfo.readyPlayers, roomInfo.totalPlayers);
         })
 
         // Condition: Client notified all players are tagged
@@ -193,10 +183,8 @@ export class HomeStage extends Phaser.Scene {
         // Condition: Client sends when player is ready but there are other players not ready
         // Parameter: Number players not ready
         // Handling: Display correct colored circles
-        this.socket.on('waitingUpdate', (playersNotReady) =>{
-            console.log("PLAYERS NOT READY: ", playersNotReady);
-            readyPlayers = totalPlayers - playersNotReady;
-            this.updateWaitingRoom();
+        this.socket.on('waitingUpdate', (roomInfo) =>{
+            self.updateWaitingRoom(roomInfo.readyPlayers, roomInfo.totalPlayers);
         })
 
         // Condition: Client sends when all players are ready
@@ -205,9 +193,7 @@ export class HomeStage extends Phaser.Scene {
         this.socket.on('allReady', (players) =>{
             console.log("All players are ready");
             this.removeText();
-            totalPlayers = 0;
             Object.keys(players).forEach((id) => {
-                totalPlayers++;
                 if(players[id].playerId == self.socket.id) {
                     player = self.createPlayer(self, players[id]);
                     player.isChaser = players[id].isChaser;
@@ -238,11 +224,7 @@ export class HomeStage extends Phaser.Scene {
     }
 
     update() {
-        if(gamestatus == "waiting") {
-            
-        } else if(gamestatus == "gameover") {
-            
-        } else if(gamestatus == "playing") {
+        if(gamestatus == "playing") {
             if(Date.now()-allTagTimer > 500) {
                 allTagTimer = Date.now();
                 this.socket.emit('checkAllTagged');
@@ -345,7 +327,7 @@ export class HomeStage extends Phaser.Scene {
     } 
 
     // Updates circles in waiting room
-    updateWaitingRoom() {
+    updateWaitingRoom(readyPlayers, totalPlayers) {
         console.log("Updating to accomodate " + totalPlayers + " players");
         waitingStatus.forEach(function (circle) {
             circle.destroy();
