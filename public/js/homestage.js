@@ -171,6 +171,7 @@ export class HomeStage extends Phaser.Scene {
         this.socket.on('playersAllTagged', () =>{
             gamestatus = "gameover";
             this.displayText("Game Over");
+            replay.remove();
             replay = new Button(screenCenterX, screenCenterY+50, 'Ready', this, () => {
                 this.socket.emit('playerReady');
                 player.destroy();
@@ -198,7 +199,6 @@ export class HomeStage extends Phaser.Scene {
                     player = self.createPlayer(self, players[id]);
                     player.isChaser = players[id].isChaser;
                     self.physics.add.collider(player, platforms);
-                    playerGenerated = true;
                 } else {
                     if(!players[id].isTagged) {
                         var otherPlayer = self.createPlayer(self, players[id]);
