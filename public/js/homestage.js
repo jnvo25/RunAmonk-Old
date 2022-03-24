@@ -7,8 +7,6 @@ var runners;
 var lastUpdated;
 let spacebar;
 var ladder;
-var gameTime;
-var gameover;
 var allTagTimer;
 var replay;
 var screenCenterX;
@@ -17,6 +15,7 @@ var waitingStatus;
 var gamestatus;
 var screenText;
 var counter;
+var startTime;
 
 export class HomeStage extends Phaser.Scene {
     constructor() {
@@ -81,7 +80,6 @@ export class HomeStage extends Phaser.Scene {
         spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         lastUpdated = Date.now();
         allTagTimer = Date.now();
-        gameover = false;
         screenCenterX = this.cameras.main.worldView.x + this.cameras.main.width / 2;
         screenCenterY = this.cameras.main.worldView.y + this.cameras.main.height / 2;
         waitingStatus = new Set();
@@ -173,7 +171,6 @@ export class HomeStage extends Phaser.Scene {
             gamestatus = "gameover";
             this.displayText("Game Over: " + winCondition + " win!");
             replay.remove();
-            gameTime = 120;
             replay = new Button(screenCenterX, screenCenterY+50, 'Ready', this, () => {
                 this.socket.emit('playerReady');
                 player.destroy();
@@ -193,7 +190,9 @@ export class HomeStage extends Phaser.Scene {
         // Condition: Client sends when all players are ready
         // Parameter: None
         // Handling: 
-        this.socket.on('allReady', (players) =>{
+        this.socket.on('allReady', (gameInfo) =>{
+            startTime = gameInfo.startTime;
+            const players = gameInfo.players;
             console.log("All players are ready");
             this.removeText();
             Object.keys(players).forEach((id) => {
@@ -212,21 +211,20 @@ export class HomeStage extends Phaser.Scene {
             console.log("DESTROY WAITING ROOM");
             this.destroyWaitingRoom();
             gamestatus = "playing";
-            this.countdown(self, counter);
-        })
-
-        // Display text countdown
-        gameTime = 120;
-        counter = this.add.text(738,35, gameTime, {color: "black"});
+        })        
 
         // Display button
         replay = new Button(screenCenterX, screenCenterY+50, 'Ready', this, () => {
             this.socket.emit('playerReady');
         });
+
+        counter = this.add.text(738,35, 120, {color: "black"});
     }
 
     update() {
+        
         if(gamestatus == "playing") {
+            this.updateClock();
             if(Date.now()-allTagTimer > 500) {
                 allTagTimer = Date.now();
                 this.socket.emit('checkAllTagged');
@@ -365,18 +363,14 @@ export class HomeStage extends Phaser.Scene {
         screenText.destroy();
     }
 
-    countdown(scene, text) {
-        scene.time.addEvent({
-            delay: 1000,
-            callback: () => {
-                gameTime--;
-                text.setText(gameTime);
-                if(gameTime > 0 && !gameover)
-                    this.countdown(scene, text);
-                else
-                    this.socket.emit('countExpired');
-            }
-        })
+    updateClock() {
+        const time = Math.floor(120 - (Date.now() - startTime)/1000);
+        if(parseInt(counter.text) < 0) {
+            this.socket.emit("countExpired")
+            counter.setText(0);
+        } else if(counter.text !== time) { 
+            counter.setText(time);
+        }
     }
     
 }

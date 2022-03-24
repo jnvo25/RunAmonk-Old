@@ -98,7 +98,7 @@ io.on('connection', function (socket) {
     players[socket.id].ready = true;
     const roomInfo = countPlayers();
     if(roomInfo.readyPlayers == roomInfo.totalPlayers) {
-      io.emit('allReady', generatePlayers());
+      io.emit('allReady', {players: generatePlayers(), startTime: Date.now()});
     } else {
       io.emit('waitingUpdate', roomInfo);
     }
