@@ -218,7 +218,7 @@ export class HomeStage extends Phaser.Scene {
             this.socket.emit('playerReady');
         });
 
-        counter = this.add.text(738,35, 120, {color: "black"});
+        counter = this.add.text(738,35, 90, {color: "black"});
     }
 
     update() {
@@ -364,7 +364,7 @@ export class HomeStage extends Phaser.Scene {
     }
 
     updateClock() {
-        const time = Math.floor(120 - (Date.now() - startTime)/1000);
+        const time = Math.floor(90 - (Date.now() - startTime)/1000);
         if(parseInt(counter.text) < 0) {
             this.socket.emit("countExpired")
             counter.setText(0);
