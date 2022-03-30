@@ -106,7 +106,7 @@ io.on('connection', function (socket) {
 
 });
 
-server.listen(8081, function () {
+server.listen(process.env.PORT || 80, function () {// Uses port set by heroku
     console.log(`Listening on ${server.address().port}`);
 });
 
