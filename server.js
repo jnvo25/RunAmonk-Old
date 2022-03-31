@@ -127,6 +127,7 @@ function gameover(winCondition) {
     players[key].ready = false;
   }
   io.emit('playersAllTagged', winCondition);
+  io.emit('waitingUpdate', {totalPlayers: 0, readyPlayers: 0});
 }
 
 function generatePlayers() {

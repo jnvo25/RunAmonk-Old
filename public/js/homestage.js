@@ -1,4 +1,5 @@
 import { Button } from "./button.js";
+import { WaitingOverlay } from '/js/WaitingOverlay.js';
 var player;
 var cursors;
 var otherPlayers;
@@ -49,6 +50,9 @@ export class HomeStage extends Phaser.Scene {
     }
 
     create() {
+        this.scene.add('WaitingOverlay', WaitingOverlay);
+        this.scene.bringToTop('WaitingOverlay');
+        this.scene.launch('WaitingOverlay');
         // Create stage
         const backgroundImage = this.add.image(0,0, 'background').setOrigin(0,0);
         backgroundImage.setScale(2, 0.8);
@@ -89,7 +93,8 @@ export class HomeStage extends Phaser.Scene {
         cursors = this.input.keyboard.createCursorKeys();
         
         // Create connection to server
-        this.socket = io();
+        this.registry.set('socket', io());
+        this.socket = this.registry.get('socket');
         var self = this;    // Sometimes sockets don't like "this" so define this outside and pass in
         otherPlayers = new Set();
 
@@ -99,14 +104,6 @@ export class HomeStage extends Phaser.Scene {
         self.physics.add.overlap(runners,chasers, (player1, player2) => {
             this.handleTag(runners.contains(player1) ? player1 : player2);
         });
-
-        // Condition: When this client joins an active game
-        // Parameter: Waiting room information (totalPlayers, readyPlayers, gamestatus)
-        // Handling: Draw circles on screen according to how many players
-        this.socket.on('currentPlayers', (roomInfo) => {    
-            this.displayText("Waiting for players to ready");
-            this.updateWaitingRoom(self);
-        })
 
         // Condition: Notification a player has been tagged by another player
         // Parameter: PlayerId
@@ -149,52 +146,27 @@ export class HomeStage extends Phaser.Scene {
             });
         });
 
-        // Condition: Notification a new player joined
-        // Parameter: Total number of players
-        // Handling: Add player to client's list
-        this.socket.on('newPlayer', function (roomInfo) {
-            console.log("NEW PLAYER!", roomInfo.totalPlayers);
-            self.updateWaitingRoom(roomInfo.readyPlayers, roomInfo.totalPlayers);
-        });
-
-        // Condition: Notification a player disconnected
-        // Parameter: Total number of players
-        // Handling: Total players in game
-        this.socket.on('disconnectedPlayer', (roomInfo) => {     
-            self.updateWaitingRoom(roomInfo.readyPlayers, roomInfo.totalPlayers);
-        })
-
         // Condition: Client notified all players are tagged
         // Parameter: None
         // Handling: End game and ask to replay
         this.socket.on('playersAllTagged', (winCondition) =>{
+            player.destroy();
+            Object.keys(otherPlayers).forEach((otherPlayer) => {
+                otherPlayer.destroy();
+            })
             gamestatus = "gameover";
-            this.displayText("Game Over: " + winCondition + " win!");
-            replay.remove();
-            replay = new Button(screenCenterX, screenCenterY+50, 'Ready', this, () => {
-                this.socket.emit('playerReady');
-                player.destroy();
-                Object.keys(otherPlayers).forEach((otherPlayer) => {
-                    otherPlayer.destroy();
-                })
-            });
-        })
-
-        // Condition: Client sends when player is ready but there are other players not ready
-        // Parameter: Number players not ready
-        // Handling: Display correct colored circles
-        this.socket.on('waitingUpdate', (roomInfo) =>{
-            self.updateWaitingRoom(roomInfo.readyPlayers, roomInfo.totalPlayers);
+            // this.displayText("Game Over: " + winCondition + " win!");
+            this.scene.bringToTop('WaitingOverlay');
         })
 
         // Condition: Client sends when all players are ready
         // Parameter: None
         // Handling: 
         this.socket.on('allReady', (gameInfo) =>{
+            this.scene.sendToBack('WaitingOverlay');
             startTime = gameInfo.startTime;
             const players = gameInfo.players;
             console.log("All players are ready");
-            this.removeText();
             Object.keys(players).forEach((id) => {
                 if(players[id].playerId == self.socket.id) {
                     player = self.createPlayer(self, players[id]);
@@ -208,15 +180,10 @@ export class HomeStage extends Phaser.Scene {
                     }
                 }
             });
-            console.log("DESTROY WAITING ROOM");
-            this.destroyWaitingRoom();
             gamestatus = "playing";
         })        
 
-        // Display button
-        replay = new Button(screenCenterX, screenCenterY+50, 'Ready', this, () => {
-            this.socket.emit('playerReady');
-        });
+        
 
         counter = this.add.text(738,35, 90, {color: "black"});
     }
